@@ -1,0 +1,24 @@
+# Create a new build script
+cat > build_ops.sh << 'EOF'
+#!/bin/bash
+# Ensure we're using the right Python
+export PYTHONPATH=$CONDA_PREFIX/lib/python3.7/site-packages:$PYTHONPATH
+
+# Print debugging information
+echo "Using Python: $(which python)"
+echo "PyTorch location: $(python -c 'import torch; print(torch.__file__)')"
+echo "CUDA available: $(python -c 'import torch; print(torch.cuda.is_available())')"
+
+# Run the original setup commands
+cd ./src
+python setup.py build_ext --inplace
+cd ../
+
+echo "Build complete!"
+EOF
+
+# Make it executable
+chmod +x build_ops.sh
+
+# Run the new script
+./build_ops.sh

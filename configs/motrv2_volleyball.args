@@ -1,0 +1,17 @@
+# configs/motrv2_volleyball.args
+--dataset_file=e2e_volleyball
+--epochs=50
+--lr_drop=40
+--lr=2e-4
+--lr_backbone=2e-5
+--batch_size=2
+--sample_mode=random_interval
+--sample_interval=10
+--sampler_lengths=4
+--enc_layers=6
+--dec_layers=6
+--det_db=det_db_volleyball.json
+--data_txt_path_train=./datasets/data_path/volleyball.train
+--data_txt_path_val=./datasets/data_path/volleyball.val
+--mot_path=/path/to/volleyball/dataset
+--output_dir=./output/volleyball

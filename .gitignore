@@ -3,6 +3,7 @@ __pycache__/
 *.train
 exps/
 build/
+data/
 *.egg
 *.egg-info
 *.mp4
