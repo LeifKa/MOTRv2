@@ -50,7 +50,7 @@ The codebase is built on top of [Deformable DETR](https://github.com/fundamental
     ```bash
     conda create -n motrv2 python=3.7
     conda activate motrv2
-    conda install pytorch=1.8.1 torchvision=0.9.1 cudatoolkit=10.2 -c pytorch
+    conda install pytorch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 -c pytorch
     ```
 
 * Other requirements
