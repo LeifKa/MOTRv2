@@ -103,7 +103,7 @@ You may download the coco pretrained weight from [Deformable DETR (+ iterative b
 
 ```bash
 # run a simple inference on our pretrained weights
-./tools/simple_inference.sh ./motrv2_dancetrack.pth
+./tools/simple_inference.sh ./weights/motrv2_dancetrack.pth
 
 # Or evaluate an experiment run
 # ./tools/eval.sh exps/motrv2/run1
