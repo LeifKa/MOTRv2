@@ -20,6 +20,6 @@
 --append_crowd
 --det_db det_db_beach_volleyball.json
 --use_checkpoint
---mot_path /data/Dataset/mot
+--mot_path ./data/Dataset/mot
 --output_dir outputs
 --exp_name beach_volleyball_test
