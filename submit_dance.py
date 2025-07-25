@@ -196,17 +196,8 @@ if __name__ == '__main__':
     detr = detr.cuda()
 
     # '''for MOT17 submit''' 
-    # For single sequence processing
-    if hasattr(args, 'single_video') and args.single_video:
-        # Direct path to your single video sequence
-        vids = ['volleyball/test/test1']
-    else:
-        # Original multi-sequence code
-        sub_dir = 'volleyball/test'
-        seq_nums = os.listdir(os.path.join(args.mot_path, sub_dir))
-        if 'seqmap' in seq_nums:
-            seq_nums.remove('seqmap')
-        vids = [os.path.join(sub_dir, seq) for seq in seq_nums]
+   # Direct path for beach volleyball sequence
+    vids = ['volleyball/test/test1']
 
     rank = int(os.environ.get('RLAUNCH_REPLICA', '0'))
     ws = int(os.environ.get('RLAUNCH_REPLICA_TOTAL', '1'))
