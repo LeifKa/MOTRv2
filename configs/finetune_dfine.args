@@ -1,0 +1,44 @@
+# Fine-tuning configuration for D-FINE adaptation
+# This trains only the yolox_embed layer to adapt to D-FINE detections
+
+# Model architecture
+--meta_arch motr
+--dataset_file e2e_dance
+--with_box_refine
+--query_interaction_layer QIMv2
+--num_queries 10
+
+# Fine-tuning specific settings
+--epochs 2
+--lr 1e-5
+--lr_backbone 0
+--lr_drop 4
+--embed_only True
+
+# Model checkpoint (CHANGE THIS to your MOTRv2 checkpoint)
+--resume r50_deformable_detr_plus_iterative_bbox_refinement-checkpoint.pth
+
+# Data settings
+--batch_size 1
+--sample_mode random_interval
+--sample_interval 10
+--sampler_lengths 5
+--merger_dropout 0
+--dropout 0
+--random_drop 0.1
+--fp_ratio 0.3
+--query_denoise 0.05
+
+# Dataset paths
+--det_db det_db_beach_volleyball.json
+--mot_path ./data/Dataset/mot
+--data_txt_path_train ./datasets/data_path/volleyball_train.txt
+
+# Output
+--output_dir outputs/finetune_dfine_embed
+--exp_name dfine_volleyball_embed
+
+# Training options
+--append_crowd
+--use_checkpoint
+--num_workers 2
