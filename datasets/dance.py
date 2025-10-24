@@ -65,7 +65,28 @@ class DetMOTDetection:
                     x, y, w, h = map(float, (xywh))
                     self.labels_full[vid][t].append([x, y, w, h, i, crowd])
 
-        add_mot_folder("DanceTrack/train")
+        # add_mot_folder("DanceTrack/train")  # Commented out - only use sequences from data_txt_path
+
+        # Load sequences from data_txt_path file
+        if data_txt_path and os.path.exists(data_txt_path):
+            for line in open(data_txt_path):
+                seq_name = line.strip()
+                if seq_name:
+                    print(f"Loading sequence from data_txt_path: {seq_name}")
+                    vid = seq_name
+                    gt_path = os.path.join(self.mot_path, vid, 'gt', 'gt.txt')
+                    for l in open(gt_path):
+                        t, i, *xywh, mark, label = l.strip().split(',')[:8]
+                        t, i, mark, label = map(int, (t, i, mark, label))
+                        if mark == 0:
+                            continue
+                        if label in [3, 4, 5, 6, 9, 10, 11]:  # Non-person
+                            continue
+                        else:
+                            crowd = False
+                        x, y, w, h = map(float, (xywh))
+                        self.labels_full[vid][t].append([x, y, w, h, i, crowd])
+
         vid_files = list(self.labels_full.keys())
 
         self.indices = []
