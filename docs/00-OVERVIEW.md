@@ -167,41 +167,65 @@ BeachKI/
 │   └── motrv2_test_config.json (you create)
 │
 ├── MOTRv2/
-│   ├── data/Dataset/mot/volleyball/
-│   │   ├── train/
-│   │   │   └── game1/
-│   │   │       ├── img1/
-│   │   │       │   ├── 000001.jpg
-│   │   │       │   └── ...
-│   │   │       └── gt/
-│   │   │           └── gt.txt
-│   │   └── test/
-│   │       └── test1/
-│   │           ├── img1/
-│   │           └── (no gt needed for testing)
+│   ├── inputs/                               ← NEW: Organized inputs
+│   │   ├── detections/                       ← Detection JSON files
+│   │   │   ├── Beispielvideo_Beach_YOLOX.json
+│   │   │   ├── det_db_beach_volleyball.json
+│   │   │   ├── det_db_volleyball_train.json
+│   │   │   └── det_db_volleyball_train_dfine.json
+│   │   └── videos/                           ← Source videos
+│   │       ├── Beispielvideo_Beach_YOLOX.mp4
+│   │       └── Sequenz_Beach.mp4
+│   │
+│   ├── weights/                              ← All model weights
+│   │   ├── motrv2_dancetrack.pth
+│   │   └── r50_deformable_detr_plus_iterative_bbox_refinement-checkpoint.pth
+│   │
+│   ├── data/Dataset/mot/
+│   │   ├── det_db_volleyball_train_dfine.json  ← Copy of detection file (required here)
+│   │   └── volleyball/
+│   │       ├── train/
+│   │       │   └── game1/
+│   │       │       ├── img1/
+│   │       │       │   ├── 000001.jpg  (6-digit format!)
+│   │       │       │   └── ...
+│   │       │       └── gt/
+│   │       │           └── gt.txt
+│   │       └── test/
+│   │           └── test1/
+│   │               ├── img1/
+│   │               └── (no gt needed for testing)
 │   │
 │   ├── datasets/data_path/
 │   │   └── volleyball_train.txt
 │   │
 │   ├── outputs/
 │   │   ├── finetune_dfine_embed/
-│   │   │   ├── checkpoint0001.pth ← FINE-TUNED MODEL
-│   │   │   └── checkpoint0000.pth
-│   │   ├── test_finetuned/
-│   │   │   └── test1.txt
-│   │   └── test_original/
-│   │       └── test1.txt
+│   │   │   └── checkpoint.pth ← FINE-TUNED MODEL
+│   │   ├── inference_finetuned/
+│   │   │   ├── dfine_finetuned/
+│   │   │   │   └── game1.txt
+│   │   │   └── tracking_visualization.mp4
+│   │   └── pseudo_labels/
+│   │       └── train_pseudo_gt/
+│   │           └── game1.txt
 │   │
-│   ├── det_db_volleyball_train.json
-│   ├── det_db_beach_test.json
-│   ├── finetune_for_dfine.py
-│   ├── convert_to_gt.py
-│   └── visualize_tracking.py
+│   ├── tools/
+│   │   ├── fine_tuning/
+│   │   │   └── finetune_for_dfine.py
+│   │   ├── conversion/
+│   │   │   └── convert_to_gt.py
+│   │   └── visualization/
+│   │       └── visualize_tracking.py
+│   │
+│   └── docs/
+│       ├── 00-OVERVIEW.md (this file)
+│       ├── 01-STEP_BY_STEP.md
+│       ├── 02-QUICK_COMMANDS.md
+│       ├── 03-ADVANCED.md
+│       └── 04-THEORY.md
 │
-├── merge_detections.py
-├── FINE_TUNING_STEP_BY_STEP.md ← READ THIS FIRST
-├── QUICK_COMMANDS.md
-└── README_FINETUNING.md (this file)
+└── extract_frames.py
 ```
 
 ---
@@ -260,15 +284,52 @@ D-FINE score (0.85) → pos2posemb() + yolox_embed
 
 ---
 
+## 🔧 Key Fixes Applied
+
+During implementation, we encountered and fixed several issues:
+
+### 1. Frame Numbering Format (datasets/dance.py:183, 206)
+**Problem**: Code expected 8-digit format (`00000001.jpg`) but frames were 6-digit (`000001.jpg`)
+**Fix**: Changed `f'{idx:08d}.jpg'` to `f'{idx:06d}.jpg'`
+
+### 2. Detection Database Keys (submit_dance.py:50)
+**Problem**: Code looked for keys with `.txt` extension but JSON had keys without extension
+**Fix**: Changed `self.det_db[f_path[:-4] + '.txt']` to `self.det_db[f_path[:-4]]`
+
+### 3. Dataset Loading (datasets/dance.py:68-88)
+**Problem**: Hardcoded DanceTrack loading instead of reading from `data_txt_path`
+**Fix**: Commented out DanceTrack loading, added code to load sequences from volleyball_train.txt
+
+### 4. Class ID Differences (D-FINE config)
+**Problem**: Objects365 uses class 1 for "person", COCO uses class 0
+**Fix**: Removed class restrictions, kept only score threshold in motrv2_training_config.json
+
+### 5. .DS_Store Files (macOS artifacts)
+**Problem**: Training tried to process `.DS_Store` as a sequence directory
+**Fix**: Removed with `find MOTRv2/data/Dataset/mot/DanceTrack -name ".DS_Store" -type f -delete`
+
+### 6. Detection File Location
+**Problem**: Training expects detection files in `data/Dataset/mot/` directory
+**Fix**: Copied detection JSON to correct location
+
+### 7. Hardcoded Sequence Path (submit_dance.py:200)
+**Problem**: Script had hardcoded test path instead of train path
+**Fix**: Changed `vids = ['volleyball/test/test1']` to `vids = ['volleyball/train/game1']`
+
+---
+
 ## 🚨 Common Issues & Solutions
 
 | Issue | Solution |
 |-------|----------|
-| "No such file" errors | Check paths in QUICK_COMMANDS.md |
+| "No such file" errors | Check paths - use inputs/detections/ for JSON files |
+| Frame format mismatch | Ensure frames are 6-digit: 000001.jpg not 00000001.jpg |
 | Loss not decreasing | Try `--lr 5e-6` |
 | Out of memory | Use `--batch_size 1 --sampler_lengths 3` |
 | No improvement after training | Train for 3-4 epochs or use more training data |
 | Bad tracking quality | Check detection quality with `--verify` flag |
+| Class filter issues | Use score threshold only, remove class restrictions for Objects365 |
+| .DS_Store errors | Remove with `find . -name ".DS_Store" -delete` |
 
 ---
 
