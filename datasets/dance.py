@@ -180,7 +180,7 @@ class DetMOTDetection:
         return rs([img], [target])
 
     def _pre_single_frame(self, vid, idx: int):
-        img_path = os.path.join(self.mot_path, vid, 'img1', f'{idx:08d}.jpg')
+        img_path = os.path.join(self.mot_path, vid, 'img1', f'{idx:06d}.jpg')
         img = Image.open(img_path)
         targets = {}
         w, h = img._size
@@ -203,7 +203,7 @@ class DetMOTDetection:
             targets['labels'].append(0)
             targets['obj_ids'].append(id + obj_idx_offset)
             targets['scores'].append(1.)
-        txt_key = os.path.join(vid, 'img1', f'{idx:08d}.txt')
+        txt_key = os.path.join(vid, 'img1', f'{idx:06d}')
         for line in self.det_db[txt_key]:
             *box, s = map(float, line.split(','))
             targets['boxes'].append(box)
