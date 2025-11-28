@@ -24,3 +24,4 @@
 --data_txt_path_train ./datasets/data_path/volleyball_full_train.txt
 --output_dir outputs/finetune_volleyball_full
 --exp_name volleyball_full_dfine_finetune
+--num_workers 4

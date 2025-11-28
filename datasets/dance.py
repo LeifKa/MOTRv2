@@ -245,8 +245,20 @@ class DetMOTDetection:
             images, targets = self.pre_continuous_frames(vid, indices)
         else:
             images, targets = self.load_crowd(idx - len(self.indices))
+
         if self.transform is not None:
             images, targets = self.transform(images, targets)
+
+        # Ensure images is a list of tensors
+        if not isinstance(images, list):
+            images = list(images)
+
+        # Verify each image is a tensor
+        for i, img in enumerate(images):
+            if not isinstance(img, torch.Tensor):
+                raise TypeError(f"Image {i} is type {type(img)}, expected torch.Tensor. "
+                               f"Transform pipeline may not be working correctly.")
+
         gt_instances, proposals = [], []
         for img_i, targets_i in zip(images, targets):
             gt_instances_i = self._targets_to_instances(targets_i, img_i.shape[1:3])
