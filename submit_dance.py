@@ -190,14 +190,14 @@ if __name__ == '__main__':
     detr, _, _ = build_model(args)
     detr.track_embed.score_thr = args.update_score_threshold
     detr.track_base = RuntimeTrackerBase(args.score_threshold, args.score_threshold, args.miss_tolerance)
-    checkpoint = torch.load(args.resume, map_location='cpu')
+    checkpoint = torch.load(args.resume, map_location='cpu', weights_only=False)
     detr = load_model(detr, args.resume)
     detr.eval()
     detr = detr.cuda()
 
     # '''for MOT17 submit'''
    # Direct path for beach volleyball sequence
-    vids = ['volleyball/train/game1']
+    vids = ['volleyball/test/test1']
 
     rank = int(os.environ.get('RLAUNCH_REPLICA', '0'))
     ws = int(os.environ.get('RLAUNCH_REPLICA_TOTAL', '1'))
