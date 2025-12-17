@@ -27,7 +27,8 @@ def read_mot_gt(gt_file):
                 conf = float(parts[6]) if len(parts) > 6 else 1.0
 
                 # Store detection as "x,y,w,h,conf\n"
-                det_str = f"{x:.2f},{y:.2f},{w:.2f},{h:.2f},{conf:.6f}\n"
+                label = int(parts[7])  # Klassen-ID aus gt.txt
+                det_str = f"{x:.2f},{y:.2f},{w:.2f},{h:.2f},{label},{conf:.6f}\n"
                 detections[frame_id].append(det_str)
 
     return detections

@@ -58,10 +58,11 @@ class DetMOTDetection:
                     t, i, mark, label = map(int, (t, i, mark, label))
                     if mark == 0:
                         continue
-                    if label in [3, 4, 5, 6, 9, 10, 11]:  # Non-person
+                    # For volleyball dataset: keep all labels (8 classes)
+                    # For MOT/DanceTrack: filter non-person labels
+                    if 'volleyball' not in vid and label in [3, 4, 5, 6, 9, 10, 11]:
                         continue
-                    else:
-                        crowd = False
+                    crowd = False
                     x, y, w, h = map(float, (xywh))
                     self.labels_full[vid][t].append([x, y, w, h, i, crowd])
 
@@ -80,10 +81,7 @@ class DetMOTDetection:
                         t, i, mark, label = map(int, (t, i, mark, label))
                         if mark == 0:
                             continue
-                        if label in [3, 4, 5, 6, 9, 10, 11]:  # Non-person
-                            continue
-                        else:
-                            crowd = False
+                        crowd = False
                         x, y, w, h = map(float, (xywh))
                         self.labels_full[vid][t].append([x, y, w, h, i, crowd])
 

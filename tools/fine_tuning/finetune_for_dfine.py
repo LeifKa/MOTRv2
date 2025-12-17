@@ -66,15 +66,36 @@ def freeze_except_yolox_embed(model):
     return model
 
 
-def freeze_more_layers(model, train_layers=['yolox_embed', 'track_embed', 'query_interaction']):
+def get_train_layers_for_strategy(strategy):
     """
-    Freeze all except specified layers (for Option 2 - more aggressive fine-tuning).
+    Get the list of layers to train based on the strategy.
+
+    Strategies:
+        minimal: Only yolox_embed (safest, prevents forgetting)
+        moderate: yolox_embed + track_embed + class_embed (recommended for multi-class)
+        aggressive: yolox_embed + track_embed + class_embed + query_interaction
+    """
+    strategies = {
+        'minimal': ['yolox_embed'],
+        'moderate': ['yolox_embed', 'track_embed', 'class_embed'],
+        'aggressive': ['yolox_embed', 'track_embed', 'class_embed', 'query_interaction'],
+    }
+
+    if strategy not in strategies:
+        raise ValueError(f"Unknown strategy: {strategy}. Choose from: {list(strategies.keys())}")
+
+    return strategies[strategy]
+
+
+def freeze_selective_layers(model, train_layers):
+    """
+    Freeze all except specified layers.
 
     Args:
         train_layers: List of layer name keywords to train
     """
     print("\n" + "="*80)
-    print(f"Setting up partial training: {', '.join(train_layers)}")
+    print(f"FINE-TUNING STRATEGY: {', '.join(train_layers)}")
     print("="*80 + "\n")
 
     trainable_params = []
@@ -106,19 +127,27 @@ def freeze_more_layers(model, train_layers=['yolox_embed', 'track_embed', 'query
     return model
 
 
+def freeze_more_layers(model, train_layers=['yolox_embed', 'track_embed', 'query_interaction']):
+    """
+    Backwards compatibility wrapper for freeze_selective_layers.
+    """
+    return freeze_selective_layers(model, train_layers)
+
+
 def main(args):
     utils.init_distributed_mode(args)
     print("git:\n  {}\n".format(utils.get_sha()))
 
     print("\n" + "="*80)
-    print("D-FINE ADAPTATION FINE-TUNING")
+    print("VOLLEYBALL MULTI-CLASS FINE-TUNING")
     print("="*80)
     print(f"\nConfiguration:")
+    print(f"  Dataset: {args.dataset_file}")
     print(f"  Detection DB: {args.det_db}")
     print(f"  Resume from: {args.resume}")
     print(f"  Learning rate: {args.lr}")
     print(f"  Epochs: {args.epochs}")
-    print(f"  Training strategy: {'embed_only' if args.embed_only else 'multi_layer'}")
+    print(f"  Training strategy: {args.train_strategy if hasattr(args, 'train_strategy') else 'legacy'}")
     print("="*80 + "\n")
 
     device = torch.device(args.device)
@@ -160,9 +189,15 @@ def main(args):
         print("⚠️  WARNING: No checkpoint specified! Training from scratch.\n")
 
     # Apply freezing strategy
-    if args.embed_only:
+    if hasattr(args, 'train_strategy') and args.train_strategy:
+        # New strategy-based approach
+        train_layers = get_train_layers_for_strategy(args.train_strategy)
+        model = freeze_selective_layers(model, train_layers)
+    elif args.embed_only:
+        # Legacy: only yolox_embed
         model = freeze_except_yolox_embed(model)
     else:
+        # Legacy: multiple layers
         train_layers = ['yolox_embed', 'track_embed', 'query_interaction']
         model = freeze_more_layers(model, train_layers)
 
@@ -284,10 +319,24 @@ if __name__ == '__main__':
     )
 
     # Add fine-tuning specific arguments
-    parser.add_argument('--embed_only', default=True, type=lambda x: str(x).lower() == 'true',
-                       help='If True, only train yolox_embed. If False, train multiple layers.')
+    parser.add_argument('--train_strategy', default='moderate', type=str,
+                       choices=['minimal', 'moderate', 'aggressive'],
+                       help='Training strategy: minimal (yolox_embed only), '
+                            'moderate (+ track_embed, class_embed), '
+                            'aggressive (+ query_interaction). Default: moderate')
+    parser.add_argument('--embed_only', default=None, type=lambda x: str(x).lower() == 'true' if x else None,
+                       help='[DEPRECATED] Use --train_strategy instead. If True, only train yolox_embed.')
 
     args = parser.parse_args()
+
+    # Handle deprecated --embed_only argument
+    if args.embed_only is not None:
+        print("\n⚠️  WARNING: --embed_only is deprecated. Use --train_strategy instead.")
+        if args.embed_only:
+            args.train_strategy = 'minimal'
+        else:
+            args.train_strategy = 'moderate'
+        print(f"   Using strategy: {args.train_strategy}\n")
 
     # Validate arguments
     if not args.resume:
