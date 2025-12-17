@@ -90,7 +90,8 @@ class Detector(object):
         self.img_list = sorted(img_list)
         self.img_len = len(self.img_list)
 
-        self.predict_path = os.path.join(self.args.output_dir, args.exp_name)
+        # Save directly to output_dir without exp_name subdirectory
+        self.predict_path = self.args.output_dir
         os.makedirs(self.predict_path, exist_ok=True)
 
     @staticmethod
@@ -146,7 +147,8 @@ class Detector(object):
                 x1, y1, x2, y2 = xyxy
                 w, h = x2 - x1, y2 - y1
                 lines.append(save_format.format(frame=i + 1, id=track_id, x1=x1, y1=y1, w=w, h=h))
-        with open(os.path.join(self.predict_path, f'{self.seq_num}.txt'), 'w') as f:
+        # Save as tracking_inference.txt instead of {seq_num}.txt
+        with open(os.path.join(self.predict_path, 'tracking_inference.txt'), 'w') as f:
             f.writelines(lines)
         print("totally {} dts {} occlusion dts".format(total_dts, total_occlusion_dts))
 
