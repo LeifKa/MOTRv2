@@ -1,0 +1,27 @@
+=========================================
+MOTRv2 Finetuning on Volleyball Combined Dataset
+=========================================
+Job ID: 52749
+Node: gpu138
+GPU: 0
+Start time: Tue Jan  6 20:10:43 CET 2026
+
+=========================================
+Dataset Information
+=========================================
+Detection DB: det_db_volleyball_combined.json
+Data path: datasets/data_path/volleyball_combined_train.txt
+Output dir: outputs/finetune_volleyball_combined
+
+Starting fresh training...
+Traceback (most recent call last):
+  File "/home/es/es_es/es_lekamt00/BeachKI/MOTRv2/tools/fine_tuning/finetune_for_dfine.py", line 22, in <module>
+    from util.tool import load_model
+ModuleNotFoundError: No module named 'util'
+[W106 20:11:19.449194378 AllocatorConfig.cpp:28] Warning: PYTORCH_CUDA_ALLOC_CONF is deprecated, use PYTORCH_ALLOC_CONF instead (function operator())
+
+=========================================
+Training completed!
+End time: Tue Jan  6 20:11:21 CET 2026
+Output directory: outputs/finetune_volleyball_combined
+=========================================
