@@ -52,12 +52,16 @@ echo ""
 
 # Check if checkpoint exists for resume
 CHECKPOINT="outputs/finetune_volleyball_combined/checkpoint.pth"
+
+# Add current directory to PYTHONPATH so imports work
+export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+
 if [ -f "$CHECKPOINT" ]; then
     echo "Found existing checkpoint, resuming training..."
-    python tools/fine_tuning/finetune_for_dfine.py @configs/volleyball_combined_finetune.args --resume "$CHECKPOINT"
+    python tools/fine_tuning/finetune_for_dfine.py $(cat configs/volleyball_combined_finetune.args) --resume "$CHECKPOINT"
 else
     echo "Starting fresh training..."
-    python tools/fine_tuning/finetune_for_dfine.py @configs/volleyball_combined_finetune.args
+    python tools/fine_tuning/finetune_for_dfine.py $(cat configs/volleyball_combined_finetune.args)
 fi
 
 echo ""

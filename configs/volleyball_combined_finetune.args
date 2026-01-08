@@ -6,6 +6,7 @@
 --lr 1e-5
 --lr_backbone 1e-6
 --pretrained ./weights/motrv2_dancetrack.pth
+--resume ./weights/motrv2_dancetrack.pth
 --batch_size 1
 --save_period 1
 --sample_mode random_interval
