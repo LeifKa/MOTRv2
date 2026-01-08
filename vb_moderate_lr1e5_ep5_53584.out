@@ -1,0 +1,111 @@
+=========================================
+MOTRv2 Finetuning: Moderate LR=1e-5 Epochs=5
+=========================================
+Job ID: 53584
+Node: gpu124
+GPU: 0
+Start time: Thu Jan  8 19:23:48 CET 2026
+
+=========================================
+Configuration
+=========================================
+Strategy: moderate
+Learning Rate: 1e-5
+Epochs: 5
+Output dir: outputs/finetune_vb_moderate_lr1e5_ep5
+
+Starting fresh training...
+| distributed init (rank 0): env://
+/home/es/es_es/es_lekamt00/.local/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py:4876: UserWarning: barrier(): using the device under current context. You can specify `device_id` in `init_process_group` to mute this warning.
+  warnings.warn(  # warn only once
+[rank0]:[W108 19:23:54.834548248 ProcessGroupNCCL.cpp:5068] Guessing device ID based on global rank. This can cause a hang if rank to GPU mapping is heterogeneous. You can specify device_id in init_process_group()
+/home/es/es_es/es_lekamt00/.local/lib/python3.12/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/es/es_es/es_lekamt00/.local/lib/python3.12/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=ResNet50_Weights.IMAGENET1K_V1`. You can also use `weights=ResNet50_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+git:
+  sha: 834c329732c66d5770ddd527d90c883d16571803, status: has uncommited changes, branch: main
+
+
+================================================================================
+VOLLEYBALL MULTI-CLASS FINE-TUNING
+================================================================================
+
+Configuration:
+  Dataset: e2e_dance
+  Detection DB: det_db_volleyball_combined.json
+  Resume from: ./weights/motrv2_dancetrack.pth
+  Learning rate: 1e-05
+  Epochs: 5
+  Training strategy: moderate
+================================================================================
+
+Training with Self-Cross Attention.
+
+📥 Loading checkpoint from: ./weights/motrv2_dancetrack.pth
+✓ Checkpoint loaded successfully
+
+
+================================================================================
+FINE-TUNING STRATEGY: yolox_embed, track_embed, class_embed
+================================================================================
+
+✓ TRAINING: track_embed.self_attn.in_proj_weight               shape=[768, 256]
+✓ TRAINING: track_embed.self_attn.in_proj_bias                 shape=[768]
+✓ TRAINING: track_embed.self_attn.out_proj.weight              shape=[256, 256]
+✓ TRAINING: track_embed.self_attn.out_proj.bias                shape=[256]
+✓ TRAINING: track_embed.linear1.weight                         shape=[1024, 256]
+✓ TRAINING: track_embed.linear1.bias                           shape=[1024]
+✓ TRAINING: track_embed.linear2.weight                         shape=[256, 1024]
+✓ TRAINING: track_embed.linear2.bias                           shape=[256]
+✓ TRAINING: track_embed.linear_feat1.weight                    shape=[1024, 256]
+✓ TRAINING: track_embed.linear_feat1.bias                      shape=[1024]
+✓ TRAINING: track_embed.linear_feat2.weight                    shape=[256, 1024]
+✓ TRAINING: track_embed.linear_feat2.bias                      shape=[256]
+✓ TRAINING: track_embed.norm_feat.weight                       shape=[256]
+✓ TRAINING: track_embed.norm_feat.bias                         shape=[256]
+✓ TRAINING: track_embed.norm1.weight                           shape=[256]
+✓ TRAINING: track_embed.norm1.bias                             shape=[256]
+✓ TRAINING: track_embed.norm2.weight                           shape=[256]
+✓ TRAINING: track_embed.norm2.bias                             shape=[256]
+✓ TRAINING: class_embed.0.weight                               shape=[1, 256]
+✓ TRAINING: class_embed.0.bias                                 shape=[1]
+✓ TRAINING: class_embed.1.weight                               shape=[1, 256]
+✓ TRAINING: class_embed.1.bias                                 shape=[1]
+✓ TRAINING: class_embed.2.weight                               shape=[1, 256]
+✓ TRAINING: class_embed.2.bias                                 shape=[1]
+✓ TRAINING: class_embed.3.weight                               shape=[1, 256]
+✓ TRAINING: class_embed.3.bias                                 shape=[1]
+✓ TRAINING: class_embed.4.weight                               shape=[1, 256]
+✓ TRAINING: class_embed.4.bias                                 shape=[1]
+✓ TRAINING: class_embed.5.weight                               shape=[1, 256]
+✓ TRAINING: class_embed.5.bias                                 shape=[1]
+✓ TRAINING: yolox_embed.weight                                 shape=[1, 256]
+
+================================================================================
+Parameter Summary:
+  Trainable:     1,317,638 ( 3.15%)
+  Frozen:       40,558,080 (96.85%)
+  Total:        41,875,718
+================================================================================
+
+
+📊 Total trainable parameters: 1,317,638
+
+Loading sequence from data_txt_path: volleyball/combined/gt
+Found 1 videos, 18943 frames
+sampler_steps=None lenghts=[5]
+Found 0 images
+📦 Training dataset size: 18943 samples
+
+================================================================================
+🚀 Starting fine-tuning
+================================================================================
+
+
+================================================================================
+Epoch 1/5
+================================================================================
+
+/home/es/es_es/es_lekamt00/.local/lib/python3.12/site-packages/torch/functional.py:505: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at /pytorch/aten/src/ATen/native/TensorShape.cpp:4317.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
