@@ -326,7 +326,24 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Deformable DETR training and evaluation script', parents=[get_args_parser()])
-    args = parser.parse_args()
+
+    # Handle @config.args files manually
+    import sys
+    modified_args = []
+    for arg in sys.argv[1:]:
+        if arg.startswith('@'):
+            # Read config file and parse arguments
+            config_file = arg[1:]
+            with open(config_file, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        # Split line by whitespace but preserve quoted strings
+                        modified_args.extend(line.split())
+        else:
+            modified_args.append(arg)
+
+    args = parser.parse_args(modified_args)
     if args.output_dir:
         Path(args.output_dir).mkdir(parents=True, exist_ok=True)
     main(args)

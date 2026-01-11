@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --time=48:0:0
 #SBATCH --nodes=1
-#SBATCH --output=volleyball_combined_finetune_%j.out
+#SBATCH --output=volleyball_finetune_finetune_%j.out
 #SBATCH --job-name=motrv2_vbc_ft
 
 # Load modules
@@ -45,28 +45,28 @@ cd /home/es/es_es/es_lekamt00/BeachKI/MOTRv2
 echo "========================================="
 echo "Dataset Information"
 echo "========================================="
-echo "Detection DB: det_db_volleyball_combined.json"
-echo "Data path: datasets/data_path/volleyball_combined_train.txt"
-echo "Output dir: outputs/finetune_volleyball_combined"
+echo "Detection DB: det_db_volleyball_finetune.json"
+echo "Data path: datasets/data_path/volleyball_finetune_train.txt"
+echo "Output dir: outputs/finetune_volleyball_finetune"
 echo ""
 
 # Check if checkpoint exists for resume
-CHECKPOINT="outputs/finetune_volleyball_combined/checkpoint.pth"
+CHECKPOINT="outputs/finetune_volleyball_finetune/checkpoint.pth"
 
 # Add current directory to PYTHONPATH so imports work
 export PYTHONPATH="${PYTHONPATH}:$(pwd)"
 
 if [ -f "$CHECKPOINT" ]; then
     echo "Found existing checkpoint, resuming training..."
-    python tools/fine_tuning/finetune_for_dfine.py $(cat configs/volleyball_combined_finetune.args) --resume "$CHECKPOINT"
+    python tools/fine_tuning/finetune_for_dfine.py $(cat configs/volleyball_finetune_finetune.args) --resume "$CHECKPOINT"
 else
     echo "Starting fresh training..."
-    python tools/fine_tuning/finetune_for_dfine.py $(cat configs/volleyball_combined_finetune.args)
+    python tools/fine_tuning/finetune_for_dfine.py $(cat configs/volleyball_finetune_finetune.args)
 fi
 
 echo ""
 echo "========================================="
 echo "Training completed!"
 echo "End time: $(date)"
-echo "Output directory: outputs/finetune_volleyball_combined"
+echo "Output directory: outputs/finetune_volleyball_finetune"
 echo "========================================="

@@ -58,10 +58,10 @@ export PYTHONPATH="${PYTHONPATH}:$(pwd)"
 CHECKPOINT="outputs/finetune_vb_moderate_lr1e5_ep5/checkpoint.pth"
 if [ -f "$CHECKPOINT" ]; then
     echo "Found existing checkpoint, resuming training..."
-    python tools/fine_tuning/finetune_for_dfine.py $(cat configs/volleyball_combined_moderate_lr1e5_ep5.args) --resume "$CHECKPOINT"
+    python tools/fine_tuning/finetune_for_dfine.py $(cat configs/volleyball_finetune_moderate_lr1e5_ep5.args) --resume "$CHECKPOINT"
 else
     echo "Starting fresh training..."
-    python tools/fine_tuning/finetune_for_dfine.py $(cat configs/volleyball_combined_moderate_lr1e5_ep5.args)
+    python tools/fine_tuning/finetune_for_dfine.py $(cat configs/volleyball_finetune_moderate_lr1e5_ep5.args)
 fi
 
 echo ""

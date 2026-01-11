@@ -44,9 +44,9 @@ export PYTHONPATH="${PYTHONPATH}:$(pwd)"
 
 CHECKPOINT="outputs/finetune_vb_aggressive_lr1e5_ep5/checkpoint.pth"
 if [ -f "$CHECKPOINT" ]; then
-    python tools/fine_tuning/finetune_for_dfine.py $(cat configs/volleyball_combined_aggressive_lr1e5_ep5.args) --resume "$CHECKPOINT"
+    python tools/fine_tuning/finetune_for_dfine.py $(cat configs/volleyball_finetune_aggressive_lr1e5_ep5.args) --resume "$CHECKPOINT"
 else
-    python tools/fine_tuning/finetune_for_dfine.py $(cat configs/volleyball_combined_aggressive_lr1e5_ep5.args)
+    python tools/fine_tuning/finetune_for_dfine.py $(cat configs/volleyball_finetune_aggressive_lr1e5_ep5.args)
 fi
 
 echo "Training completed at $(date)"
