@@ -3,8 +3,8 @@
 --epochs 5
 --with_box_refine
 --lr_drop 4
---lr 1e-5
---lr_backbone 1e-6
+--lr 2e-5
+--lr_backbone 2e-6
 --pretrained ./weights/motrv2_dancetrack.pth
 --resume ./weights/motrv2_dancetrack.pth
 --batch_size 1
@@ -23,7 +23,7 @@
 --use_checkpoint
 --mot_path ./data/Dataset/mot
 --data_txt_path_train ./datasets/data_path/volleyball_finetune_train.txt
---output_dir outputs/finetune_vb_moderate_lr1e5_ep5
---exp_name vb_moderate_lr1e5_ep5
+--output_dir outputs/finetune_vb_minimal_lr2e5_ep5
+--exp_name vb_minimal_lr2e5_ep5
 --num_workers 4
---train_strategy moderate
+--train_strategy minimal

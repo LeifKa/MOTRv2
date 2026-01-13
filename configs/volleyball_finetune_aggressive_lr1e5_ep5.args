@@ -26,3 +26,4 @@
 --output_dir outputs/finetune_vb_aggressive_lr1e5_ep5
 --exp_name vb_aggressive_lr1e5_ep5
 --num_workers 4
+--train_strategy aggressive

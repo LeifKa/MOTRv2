@@ -177,6 +177,15 @@ def get_args_parser():
 
     parser.add_argument('--use_checkpoint', action='store_true', default=False)
     parser.add_argument('--query_denoise', type=float, default=0.)
+
+    # Fine-tuning strategy
+    parser.add_argument('--train_strategy', default=None, type=str,
+                       choices=['minimal', 'moderate', 'aggressive', 'full'],
+                       help='Fine-tuning strategy: '
+                            'minimal (yolox_embed only), '
+                            'moderate (+ track_embed, class_embed), '
+                            'aggressive (+ query_interaction), '
+                            'full (all parameters). Default: full (None)')
     return parser
 
 
@@ -262,6 +271,45 @@ def main(args):
 
     if args.pretrained is not None:
         model_without_ddp = load_model(model_without_ddp, args.pretrained)
+
+    # Apply fine-tuning strategy (freeze layers)
+    if args.train_strategy is not None and args.train_strategy != 'full':
+        strategies = {
+            'minimal': ['yolox_embed'],
+            'moderate': ['yolox_embed', 'track_embed', 'class_embed'],
+            'aggressive': ['yolox_embed', 'track_embed', 'class_embed', 'query_interaction'],
+        }
+        train_layers = strategies[args.train_strategy]
+
+        print("\n" + "="*80)
+        print(f"FINE-TUNING STRATEGY: {args.train_strategy.upper()}")
+        print(f"Training layers: {', '.join(train_layers)}")
+        print("="*80 + "\n")
+
+        trainable_params = []
+        frozen_params = []
+
+        for name, param in model_without_ddp.named_parameters():
+            should_train = any(layer in name for layer in train_layers)
+
+            if should_train:
+                param.requires_grad = True
+                trainable_params.append((name, param.numel()))
+                print(f"✓ TRAINING: {name:50s} shape={list(param.shape)}")
+            else:
+                param.requires_grad = False
+                frozen_params.append(param.numel())
+
+        # Statistics
+        total_trainable = sum(p[1] for p in trainable_params)
+        total_frozen = sum(frozen_params)
+        total_params = total_trainable + total_frozen
+
+        print("\n" + "="*80)
+        print(f"Trainable params: {total_trainable:,} ({100.0 * total_trainable / total_params:.2f}%)")
+        print(f"Frozen params:    {total_frozen:,} ({100.0 * total_frozen / total_params:.2f}%)")
+        print(f"Total params:     {total_params:,}")
+        print("="*80 + "\n")
 
     output_dir = Path(args.output_dir)
     if args.resume:
