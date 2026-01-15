@@ -262,7 +262,14 @@ def main(args):
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, args.lr_drop)
 
     if args.distributed:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
+        # When using train_strategy (freezing layers), we need find_unused_parameters=True
+        # because frozen parameters don't receive gradients
+        find_unused = args.train_strategy is not None and args.train_strategy != 'full'
+        model = torch.nn.parallel.DistributedDataParallel(
+            model,
+            device_ids=[args.gpu],
+            find_unused_parameters=find_unused
+        )
         model_without_ddp = model.module
 
     if args.frozen_weights is not None:
