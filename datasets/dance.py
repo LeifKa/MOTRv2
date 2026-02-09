@@ -64,7 +64,8 @@ class DetMOTDetection:
                         continue
                     crowd = False
                     x, y, w, h = map(float, (xywh))
-                    self.labels_full[vid][t].append([x, y, w, h, i, crowd])
+                    label_idx = label - 1  # Convert 1-indexed class_id to 0-indexed label
+                    self.labels_full[vid][t].append([x, y, w, h, i, crowd, label_idx])
 
         # add_mot_folder("DanceTrack/train")  # Commented out - only use sequences from data_txt_path
 
@@ -83,7 +84,8 @@ class DetMOTDetection:
                             continue
                         crowd = False
                         x, y, w, h = map(float, (xywh))
-                        self.labels_full[vid][t].append([x, y, w, h, i, crowd])
+                        label_idx = label - 1  # Convert 1-indexed class_id to 0-indexed label
+                        self.labels_full[vid][t].append([x, y, w, h, i, crowd, label_idx])
 
         vid_files = list(self.labels_full.keys())
 
@@ -154,7 +156,7 @@ class DetMOTDetection:
         w, h = img._size
         n_gts = len(boxes)
         scores = [0. for _ in range(len(boxes))]
-        for line in self.det_db[f'crowdhuman/train_image/{ID}.txt']:
+        for line in self.det_db.get(f'crowdhuman/train_image/{ID}.txt', []):
             *box, s = map(float, line.split(','))
             boxes.append(box)
             scores.append(s)
@@ -194,15 +196,15 @@ class DetMOTDetection:
         targets['image_id'] = torch.as_tensor(idx)
         targets['size'] = torch.as_tensor([h, w])
         targets['orig_size'] = torch.as_tensor([h, w])
-        for *xywh, id, crowd in self.labels_full[vid][idx]:
+        for *xywh, id, crowd, label_idx in self.labels_full[vid][idx]:
             targets['boxes'].append(xywh)
             assert not crowd
             targets['iscrowd'].append(crowd)
-            targets['labels'].append(0)
+            targets['labels'].append(label_idx)
             targets['obj_ids'].append(id + obj_idx_offset)
             targets['scores'].append(1.)
         txt_key = os.path.join(vid, 'img1', f'{idx:06d}')
-        for line in self.det_db[txt_key]:
+        for line in self.det_db.get(txt_key, []):
             *box, s = map(float, line.split(','))
             targets['boxes'].append(box)
             targets['scores'].append(s)

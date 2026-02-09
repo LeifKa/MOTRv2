@@ -173,18 +173,34 @@ def main(args):
         else:
             model_state = checkpoint
 
+        # Remove keys with shape mismatch (e.g. class_embed when num_classes changed)
+        current_state = model.state_dict()
+        mismatched_keys = []
+        for key in list(model_state.keys()):
+            if key in current_state and model_state[key].shape != current_state[key].shape:
+                mismatched_keys.append(
+                    f"{key} (checkpoint: {list(model_state[key].shape)}, "
+                    f"model: {list(current_state[key].shape)})"
+                )
+                del model_state[key]
+
+        if mismatched_keys:
+            print(f"Removed {len(mismatched_keys)} keys with shape mismatch (will be randomly initialized):")
+            for k in mismatched_keys:
+                print(f"    - {k}")
+
         missing_keys, unexpected_keys = model.load_state_dict(model_state, strict=False)
 
         if missing_keys:
-            print(f"⚠️  Missing keys: {len(missing_keys)}")
-            for key in missing_keys[:5]:  # Show first 5
+            print(f"Missing keys: {len(missing_keys)}")
+            for key in missing_keys[:10]:
                 print(f"    - {key}")
         if unexpected_keys:
-            print(f"⚠️  Unexpected keys: {len(unexpected_keys)}")
+            print(f"Unexpected keys: {len(unexpected_keys)}")
             for key in unexpected_keys[:5]:
                 print(f"    - {key}")
 
-        print("✓ Checkpoint loaded successfully\n")
+        print("Checkpoint loaded successfully\n")
     else:
         print("⚠️  WARNING: No checkpoint specified! Training from scratch.\n")
 
@@ -253,6 +269,7 @@ def main(args):
         model_without_ddp = model.module
 
     output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     print("="*80)
     print("🚀 Starting fine-tuning")
@@ -318,20 +335,34 @@ if __name__ == '__main__':
         add_help=False
     )
 
-    # Add fine-tuning specific arguments
-    parser.add_argument('--train_strategy', default='moderate', type=str,
-                       choices=['minimal', 'moderate', 'aggressive'],
-                       help='Training strategy: minimal (yolox_embed only), '
-                            'moderate (+ track_embed, class_embed), '
-                            'aggressive (+ query_interaction). Default: moderate')
+    # --train_strategy is already defined in main.py's get_args_parser (parent).
+    # Default to 'moderate' if not specified via config or CLI.
     parser.add_argument('--embed_only', default=None, type=lambda x: str(x).lower() == 'true' if x else None,
                        help='[DEPRECATED] Use --train_strategy instead. If True, only train yolox_embed.')
 
-    args = parser.parse_args()
+    # Handle @config.args files (same as main.py)
+    import sys
+    modified_args = []
+    for arg in sys.argv[1:]:
+        if arg.startswith('@'):
+            config_file = arg[1:]
+            with open(config_file, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        modified_args.extend(line.split())
+        else:
+            modified_args.append(arg)
+
+    args = parser.parse_args(modified_args)
+
+    # Default to moderate if no strategy specified
+    if args.train_strategy is None:
+        args.train_strategy = 'moderate'
 
     # Handle deprecated --embed_only argument
     if args.embed_only is not None:
-        print("\n⚠️  WARNING: --embed_only is deprecated. Use --train_strategy instead.")
+        print("\nWARNING: --embed_only is deprecated. Use --train_strategy instead.")
         if args.embed_only:
             args.train_strategy = 'minimal'
         else:

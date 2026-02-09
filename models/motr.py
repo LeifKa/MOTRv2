@@ -342,9 +342,8 @@ class TrackerPostProcess(nn.Module):
         out_logits = track_instances.pred_logits
         out_bbox = track_instances.pred_boxes
 
-        # prob = out_logits.sigmoid()
-        scores = out_logits[..., 0].sigmoid()
-        # scores, labels = prob.max(-1)
+        prob = out_logits.sigmoid()
+        scores, labels = prob.max(-1)
 
         # convert to [x0, y0, x1, y1] format
         boxes = box_ops.box_cxcywh_to_xyxy(out_bbox)
@@ -355,7 +354,7 @@ class TrackerPostProcess(nn.Module):
 
         track_instances.boxes = boxes
         track_instances.scores = scores
-        track_instances.labels = torch.full_like(scores, 0)
+        track_instances.labels = labels
         # track_instances.remove('pred_logits')
         # track_instances.remove('pred_boxes')
         return track_instances
@@ -715,6 +714,7 @@ def build(args):
         'e2e_joint': 1,
         'e2e_static_mot': 1,
         'e2e_volleyball' : 8,
+        'e2e_volleyball_ball': 2,  # player (0) + ball (1)
     }
     assert args.dataset_file in dataset_to_num_classes
     num_classes = dataset_to_num_classes[args.dataset_file]

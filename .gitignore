@@ -8,3 +8,4 @@ data/
 *.egg-info
 *.mp4
 *.out
+outputs/

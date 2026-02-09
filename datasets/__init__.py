@@ -15,6 +15,6 @@ from .joint import build as build_e2e_joint
 def build_dataset(image_set, args):
     if args.dataset_file == 'e2e_joint':
         return build_e2e_joint(image_set, args)
-    if args.dataset_file == 'e2e_dance':
+    if args.dataset_file in ('e2e_dance', 'e2e_volleyball_ball'):
         return build_e2e_dance(image_set, args)
     raise ValueError(f'dataset {args.dataset_file} not supported')

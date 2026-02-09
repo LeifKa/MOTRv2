@@ -47,7 +47,7 @@ class ListImgDataset(Dataset):
         cur_img = cv2.cvtColor(cur_img, cv2.COLOR_BGR2RGB)
         proposals = []
         im_h, im_w = cur_img.shape[:2]
-        for line in self.det_db[f_path[:-4]]:
+        for line in self.det_db.get(f_path[:-4], []):
             l, t, w, h, s = list(map(float, line.split(',')))
             proposals.append([(l + w / 2) / im_w,
                                 (t + h / 2) / im_h,
@@ -139,14 +139,17 @@ class Detector(object):
 
             bbox_xyxy = dt_instances.boxes.tolist()
             identities = dt_instances.obj_idxes.tolist()
+            labels = dt_instances.labels.tolist() if hasattr(dt_instances, 'labels') else [0] * len(identities)
+            scores_list = dt_instances.scores.tolist()
 
-            save_format = '{frame},{id},{x1:.2f},{y1:.2f},{w:.2f},{h:.2f},1,-1,-1,-1\n'
-            for xyxy, track_id in zip(bbox_xyxy, identities):
+            save_format = '{frame},{id},{x1:.2f},{y1:.2f},{w:.2f},{h:.2f},{score:.4f},{label},-1,-1\n'
+            for xyxy, track_id, label, score in zip(bbox_xyxy, identities, labels, scores_list):
                 if track_id < 0 or track_id is None:
                     continue
                 x1, y1, x2, y2 = xyxy
                 w, h = x2 - x1, y2 - y1
-                lines.append(save_format.format(frame=i + 1, id=track_id, x1=x1, y1=y1, w=w, h=h))
+                lines.append(save_format.format(frame=i + 1, id=track_id, x1=x1, y1=y1, w=w, h=h,
+                                                score=score, label=int(label)))
         # Save as tracking_inference.txt instead of {seq_num}.txt
         with open(os.path.join(self.predict_path, 'tracking_inference.txt'), 'w') as f:
             f.writelines(lines)
@@ -184,6 +187,8 @@ if __name__ == '__main__':
     parser.add_argument('--score_threshold', default=0.5, type=float)
     parser.add_argument('--update_score_threshold', default=0.5, type=float)
     parser.add_argument('--miss_tolerance', default=20, type=int)
+    parser.add_argument('--area_threshold', default=100, type=float,
+                       help='Min bbox area in pixels. Lower for small objects like balls (default: 100)')
     args = parser.parse_args()
     if args.output_dir:
         Path(args.output_dir).mkdir(parents=True, exist_ok=True)
@@ -207,4 +212,4 @@ if __name__ == '__main__':
 
     for vid in vids:
         det = Detector(args, model=detr, vid=vid)
-        det.detect(args.score_threshold)
+        det.detect(args.score_threshold, args.area_threshold)

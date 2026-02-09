@@ -408,5 +408,10 @@ def matched_boxlist_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
     rb = torch.min(box1[:, 2:], box2[:, 2:])  # [N,2]
     wh = (rb - lt).clamp(min=0)  # [N,2]
     inter = wh[:, 0] * wh[:, 1]  # [N]
-    iou = inter / (area1 + area2 - inter)  # [N]
+    union = area1 + area2 - inter
+    iou = torch.where(
+        union > 0,
+        inter / union,
+        torch.zeros(1, dtype=inter.dtype, device=inter.device),
+    )
     return iou
