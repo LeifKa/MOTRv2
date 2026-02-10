@@ -1,4 +1,52 @@
 {
+  "YOLOX Detections only": {
+    "metrics": {
+      "total_frames": 956,
+      "total_gt_detections": 4073,
+      "total_pred_detections": 6590,
+      "true_positives": 2884,
+      "false_positives": 3706,
+      "false_negatives": 1189,
+      "precision": 0.4376327769347496,
+      "recall": 0.708077584090351,
+      "f1_score": 0.540935946731689,
+      "mota": -0.4026516081512399,
+      "id_switches": 818,
+      "avg_iou": 0.7989480362001774,
+      "iou_threshold": 0.5
+    },
+    "losses": {
+      "detection_loss": 0.8542896389748993,
+      "iou_loss": 0.2010519637998226,
+      "tracking_loss": 0.20083476552909404,
+      "mota_loss": 1.40265160815124,
+      "combined_loss": 0.4622818743886348
+    }
+  },
+  "D-FINE Detections only": {
+    "metrics": {
+      "total_frames": 956,
+      "total_gt_detections": 4073,
+      "total_pred_detections": 7841,
+      "true_positives": 3130,
+      "false_positives": 4711,
+      "false_negatives": 943,
+      "precision": 0.3991837775793904,
+      "recall": 0.7684753253130371,
+      "f1_score": 0.5254322645626993,
+      "mota": -0.6575006137981831,
+      "id_switches": 1097,
+      "avg_iou": 0.7885247739303518,
+      "iou_threshold": 0.5
+    },
+    "losses": {
+      "detection_loss": 0.8323408971075725,
+      "iou_loss": 0.2114752260696482,
+      "tracking_loss": 0.2693346427694574,
+      "mota_loss": 1.6575006137981831,
+      "combined_loss": 0.4771793194947607
+    }
+  },
   "MOTRv2 + YOLOX (Vanilla)": {
     "metrics": {
       "total_frames": 956,
@@ -23,28 +71,76 @@
       "combined_loss": 0.39924205313420696
     }
   },
-  "YOLOX Detections only": {
+  "MOTRv2 + D-FINE (Vanilla)": {
     "metrics": {
-      "total_frames": 956,
-      "total_gt_detections": 4073,
-      "total_pred_detections": 6590,
-      "true_positives": 2884,
-      "false_positives": 3706,
-      "false_negatives": 1189,
-      "precision": 0.4376327769347496,
-      "recall": 0.708077584090351,
-      "f1_score": 0.540935946731689,
-      "mota": -0.4026516081512399,
-      "id_switches": 818,
-      "avg_iou": 0.7989480362001774,
+      "total_frames": 147,
+      "total_gt_detections": 613,
+      "total_pred_detections": 1453,
+      "true_positives": 146,
+      "false_positives": 1307,
+      "false_negatives": 467,
+      "precision": 0.10048176187198898,
+      "recall": 0.23817292006525284,
+      "f1_score": 0.14133591481122945,
+      "mota": -1.9347471451876022,
+      "id_switches": 25,
+      "avg_iou": 0.720909490751273,
       "iou_threshold": 0.5
     },
     "losses": {
-      "detection_loss": 0.8542896389748993,
-      "iou_loss": 0.2010519637998226,
-      "tracking_loss": 0.20083476552909404,
-      "mota_loss": 1.40265160815124,
-      "combined_loss": 0.4622818743886348
+      "detection_loss": 1.6613453180627582,
+      "iou_loss": 0.279090509248727,
+      "tracking_loss": 0.040783034257748776,
+      "mota_loss": 2.934747145187602,
+      "combined_loss": 0.760500190277046
+    }
+  },
+  "MOTRv2 + YOLOX (Finetuned)": {
+    "metrics": {
+      "total_frames": 956,
+      "total_gt_detections": 4073,
+      "total_pred_detections": 7420,
+      "true_positives": 3356,
+      "false_positives": 4064,
+      "false_negatives": 717,
+      "precision": 0.4522911051212938,
+      "recall": 0.823962681070464,
+      "f1_score": 0.5840076568345949,
+      "mota": -0.3356248465504541,
+      "id_switches": 659,
+      "avg_iou": 0.8009289887691974,
+      "iou_threshold": 0.5
+    },
+    "losses": {
+      "detection_loss": 0.7237462138082422,
+      "iou_loss": 0.19907101123080262,
+      "tracking_loss": 0.1617972010802848,
+      "mota_loss": 1.335624846550454,
+      "combined_loss": 0.39775894921662314
+    }
+  },
+  "MOTRv2 + D-FINE (Finetuned)": {
+    "metrics": {
+      "total_frames": 934,
+      "total_gt_detections": 3985,
+      "total_pred_detections": 584562,
+      "true_positives": 867,
+      "false_positives": 583695,
+      "false_negatives": 3118,
+      "precision": 0.0014831617518757635,
+      "recall": 0.2175658720200753,
+      "f1_score": 0.0029462387880662038,
+      "mota": -146.2685069008783,
+      "id_switches": 52,
+      "avg_iou": 0.7331045632038271,
+      "iou_threshold": 0.5
+    },
+    "losses": {
+      "detection_loss": 1.780950966228049,
+      "iou_loss": 0.2668954367961729,
+      "tracking_loss": 0.013048933500627352,
+      "mota_loss": 147.2685069008783,
+      "combined_loss": 0.7963636975802597
     }
   }
 }

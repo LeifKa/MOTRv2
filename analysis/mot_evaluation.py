@@ -467,20 +467,20 @@ class MOTEvaluator:
             print("No metrics to plot. Run compute_metrics() first.")
             return
 
-        # 1. Metrics Overview Bar Chart
-        self._plot_metrics_overview(output_path)
+        plot_functions = [
+            ('metrics_overview', self._plot_metrics_overview),
+            ('loss_functions', self._plot_loss_functions),
+            ('frame_metrics', self._plot_frame_metrics),
+            ('detection_confusion', self._plot_detection_confusion),
+            ('summary_dashboard', self._plot_summary_dashboard),
+        ]
 
-        # 2. Loss Functions Comparison
-        self._plot_loss_functions(output_path)
-
-        # 3. Per-Frame Metrics
-        self._plot_frame_metrics(output_path)
-
-        # 4. Confusion Matrix Style Plot
-        self._plot_detection_confusion(output_path)
-
-        # 5. Performance Summary Dashboard
-        self._plot_summary_dashboard(output_path)
+        for name, plot_fn in plot_functions:
+            try:
+                plot_fn(output_path)
+            except Exception as e:
+                print(f"  ✗ Failed to save {name}.png: {e}")
+                plt.close('all')
 
         print(f"\n✅ All plots saved to {output_path}")
 
@@ -499,17 +499,19 @@ class MOTEvaluator:
         ]
 
         colors = ['#3498db', '#2ecc71', '#9b59b6', '#f39c12', '#e74c3c']
-        bars = axes[0].bar(metrics_names, metrics_values, color=colors, alpha=0.7, edgecolor='black')
-        axes[0].set_ylim([0, 1])
+        # Clamp extreme MOTA values for display
+        display_values = [max(-1.0, v) for v in metrics_values]
+        bars = axes[0].bar(metrics_names, display_values, color=colors, alpha=0.7, edgecolor='black')
+        axes[0].set_ylim([min(-1.0, min(display_values) - 0.1), 1.1])
         axes[0].set_ylabel('Score', fontsize=12)
         axes[0].set_title(f'Performance Metrics — {self.label}' if self.label else 'Performance Metrics', fontsize=14, fontweight='bold')
         axes[0].grid(axis='y', alpha=0.3)
 
-        # Add value labels on bars
-        for bar in bars:
+        # Add value labels on bars (show original values, not clamped)
+        for bar, orig_val in zip(bars, metrics_values):
             height = bar.get_height()
-            axes[0].text(bar.get_x() + bar.get_width()/2., height,
-                        f'{height:.3f}',
+            axes[0].text(bar.get_x() + bar.get_width()/2., max(height, 0),
+                        f'{orig_val:.3f}',
                         ha='center', va='bottom', fontsize=10)
 
         # Detection Counts
@@ -870,14 +872,16 @@ def main():
     else:
         # Alle verfuegbaren Inference-Ergebnisse evaluieren
         predictions = {
-            'MOTRv2 + YOLOX (Vanilla)': 'outputs/inference_motrv2_yolox_vanilla/inference_motrv2_yolox_vanilla_th0.4_mt30.txt',
+            # Detectors only (kein Tracking)
             'YOLOX Detections only': 'analysis/yolox_detections_sequenz_beach.txt',
+            'D-FINE Detections only': 'analysis/dfine_detections_sequenz_beach.txt',
+            # MOTRv2 Vanilla (vortrainierte Gewichte)
+            'MOTRv2 + YOLOX (Vanilla)': 'outputs/inference_motrv2_yolox_vanilla/inference_motrv2_yolox_vanilla_th0.4_mt30.txt',
+            'MOTRv2 + D-FINE (Vanilla)': 'outputs/inference_motrv2_dfine_vanilla/inference_motrv2_dfine0.5_vanilla_th0.3_mt30.txt',
+            # MOTRv2 Finetuned (auf SportsMOT Volleyball trainiert)
+            'MOTRv2 + YOLOX (Finetuned)': 'outputs/inference_motrv2_yolox_finetuned/inference_motrv2_yolox_finetuned_th0.4.txt',
+            'MOTRv2 + D-FINE (Finetuned)': 'outputs/inference_motrv2_dfine_finetuned/inference_motrv2_dfine0.5_finetuned_th0.35.txt',
         }
-
-        # Finde alle finetune inference Ergebnisse
-        for p in sorted(Path('outputs').glob('inference_v2_*/tracking_inference.txt')):
-            name = p.parent.name.replace('inference_v2_', 'Finetuned: ')
-            predictions[name] = str(p)
 
         results = {}
         for label, pred_path in predictions.items():
