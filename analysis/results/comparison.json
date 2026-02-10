@@ -1,0 +1,50 @@
+{
+  "MOTRv2 + YOLOX (Vanilla)": {
+    "metrics": {
+      "total_frames": 956,
+      "total_gt_detections": 4073,
+      "total_pred_detections": 8574,
+      "true_positives": 3320,
+      "false_positives": 5254,
+      "false_negatives": 753,
+      "precision": 0.3872171681828785,
+      "recall": 0.8151239872329978,
+      "f1_score": 0.5250256977939433,
+      "mota": -0.5396513626319666,
+      "id_switches": 264,
+      "avg_iou": 0.7975553704728942,
+      "iou_threshold": 0.5
+    },
+    "losses": {
+      "detection_loss": 0.7976588445841237,
+      "iou_loss": 0.20244462952710585,
+      "tracking_loss": 0.06481708814141911,
+      "mota_loss": 1.5396513626319666,
+      "combined_loss": 0.39924205313420696
+    }
+  },
+  "YOLOX Detections only": {
+    "metrics": {
+      "total_frames": 956,
+      "total_gt_detections": 4073,
+      "total_pred_detections": 6590,
+      "true_positives": 2884,
+      "false_positives": 3706,
+      "false_negatives": 1189,
+      "precision": 0.4376327769347496,
+      "recall": 0.708077584090351,
+      "f1_score": 0.540935946731689,
+      "mota": -0.4026516081512399,
+      "id_switches": 818,
+      "avg_iou": 0.7989480362001774,
+      "iou_threshold": 0.5
+    },
+    "losses": {
+      "detection_loss": 0.8542896389748993,
+      "iou_loss": 0.2010519637998226,
+      "tracking_loss": 0.20083476552909404,
+      "mota_loss": 1.40265160815124,
+      "combined_loss": 0.4622818743886348
+    }
+  }
+}

@@ -4,6 +4,226 @@ Diese Datei enthält Zusammenfassungen wichtiger Entwicklungen und Kontextinform
 
 ---
 
+## Session 2026-02-10: Quantitative Evaluations-Framework fuer MOTRv2
+
+### Problem
+Fuer das Forschungsprojekt fehlte ein quantitatives Evaluations-Framework, das MOTRv2 Inferenz-Ergebnisse systematisch mit Ground Truth vergleicht, Loss-Funktionen berechnet und die Ergebnisse visuell darstellt. Die finalen GT-Daten liegen noch nicht vor, werden aber dasselbe Format haben wie `sportsmot_detections_gt_train_onethird.json` (Label Studio JSON).
+
+### Loesung
+Komplettes Evaluations-Framework erstellt im Verzeichnis `analysis/`:
+
+#### Haupt-Evaluator (`analysis/mot_evaluation.py`)
+- **MOTEvaluator-Klasse** mit vollstaendiger Pipeline: Laden, Berechnen, Visualisieren, Exportieren
+- Laedt GT aus **Label Studio JSON Format** (Prozent-Koordinaten → Pixel)
+- Laedt Predictions aus **MOT Challenge Format** (.txt)
+- IoU-basiertes Matching mit konfigurierbarem Threshold
+
+#### Berechnete Metriken
+- **Detection:** Precision, Recall, F1-Score, TP/FP/FN
+- **Tracking:** MOTA (Multiple Object Tracking Accuracy), ID Switches
+- **IoU:** Durchschnittliche Intersection over Union
+- **Per-Frame:** Alle Metriken pro Frame fuer zeitliche Analyse
+
+#### Loss-Funktionen
+- **Detection Loss:** (1 - Precision) + (1 - Recall)
+- **IoU Loss:** 1 - Average IoU
+- **Tracking Loss:** ID_Switches / Total_GT_Detections (normalisiert)
+- **MOTA Loss:** 1 - MOTA
+- **Combined Loss:** 0.4 × Detection + 0.3 × IoU + 0.3 × Tracking
+
+#### 5 Visualisierungen (Matplotlib/Seaborn)
+1. `metrics_overview.png` - Balkendiagramme Hauptmetriken + TP/FP/FN Counts
+2. `loss_functions.png` - Vergleich aller Loss-Funktionen (color-coded)
+3. `frame_metrics.png` - Precision/Recall/F1 ueber Zeit + GT vs Pred Counts
+4. `detection_confusion.png` - Confusion-Matrix-Style Darstellung
+5. `summary_dashboard.png` - Umfassendes Dashboard mit Radar-Chart, Pie-Charts, Statistik-Box
+
+#### Erweiterte Nutzung (`analysis/example_usage.py`)
+- **Modell-Vergleich:** Mehrere Modelle gegeneinander evaluieren mit Vergleichs-Plot
+- **Threshold-Sensitivitaet:** IoU-Threshold von 0.3 bis 0.9 variieren
+- **Einzel-Evaluation:** Einzelne Modell-Laeufe evaluieren
+
+#### Demo (`analysis/demo_evaluation.py`)
+- Generiert synthetische GT und Predictions mit konfigurierbarem Noise
+- Zeigt vollstaendigen Workflow ohne echte Daten
+- Erfolgreich getestet: alle 5 Plots generiert
+
+### Wichtige Aenderungen und Bugfixes waehrend Entwicklung
+
+1. **Label Studio JSON Struktur:** `original_width`/`original_height` liegen auf `bbox_data`-Ebene, **nicht** innerhalb von `value` → Fix in `load_ground_truth_json()`
+2. **Nicht-numerische Track IDs:** Label Studio nutzt teilweise zufaellige String-IDs (z.B. `2DBmQYLmty`) statt `track_X` Format → Hash-basiertes Mapping implementiert mit `self.track_id_mapping`
+3. **Leere Metriken:** Robustheit bei fehlenden/leeren Predictions hinzugefuegt (Return-Defaults statt KeyError)
+
+### Erkenntnisse
+
+1. **Label Studio JSON Format:**
+   - Bounding Boxes in Prozent-Koordinaten (x%, y%, width%, height%)
+   - `original_width`/`original_height` auf Result-Ebene (nicht in `value`)
+   - Track IDs koennen beliebige Strings sein, nicht nur `track_X`
+   - Bildpfade im Format `/data/local-files/?d=train/{seq}/img1/XXXXXX.jpg`
+
+2. **Frame-ID Extraktion:** Regex-basiert aus Bildpfad (`000001.jpg` → Frame 1)
+
+3. **Prediction-Dateien:** Einige Inference-Outputs sind leer (0 Bytes) → Framework braucht robustes Error-Handling
+
+4. **GT Daten haben 544 annotierte Frames** (von 1860 Eintraegen in der JSON)
+
+### Erstellte Dateien
+```
+analysis/
+├── mot_evaluation.py      # Haupt-Evaluator (790+ Zeilen)
+├── example_usage.py       # Modell-Vergleich, Threshold-Analyse
+├── demo_evaluation.py     # Demo mit synthetischen Daten
+├── requirements.txt       # numpy, matplotlib, seaborn
+├── README.md              # Vollstaendige Dokumentation
+├── QUICKSTART.md          # Schnellstart-Anleitung
+└── demo_data/             # Generierte Demo-Ergebnisse
+    ├── demo_gt.json
+    ├── demo_predictions.txt
+    ├── demo_metrics.json
+    └── plots/             # 5 Visualisierungen
+```
+
+### Nutzung (sobald finale GT-Daten vorliegen)
+```bash
+# 1. Pfade anpassen in mot_evaluation.py main() Funktion
+# 2. Ausfuehren:
+cd /home/es/es_es/es_lekamt00/BeachKI/MOTRv2
+python3 analysis/mot_evaluation.py
+
+# Oder programmatisch:
+from analysis.mot_evaluation import MOTEvaluator
+evaluator = MOTEvaluator(iou_threshold=0.5)
+evaluator.load_ground_truth_json("pfad/zu/gt.json")
+evaluator.load_predictions_mot_format("pfad/zu/predictions.txt")
+evaluator.compute_metrics()
+evaluator.print_summary()
+evaluator.plot_results("output/plots")
+```
+
+### Naechste Schritte
+1. Finale GT-Daten einbinden und Pfade anpassen
+2. Inferenz-Ergebnisse aller 9 Modell-Konfigurationen evaluieren
+3. Modell-Vergleich mit `example_usage.py` durchfuehren
+4. Ergebnisse fuer Paper/Praesentation aufbereiten
+
+---
+
+## Session 2026-02-10: Ball-Finetuning Detection Database Korrektur
+
+### Problem
+Das Ball-Tracking Finetuning (`volleyball_ball_finetune`, 2 Klassen: Player + Ball) hatte eine **fehlerhafte Detection Database** (`det_db_volleyball_ball.json`):
+- Nur **300 Frames mit 371 Ball-Detektionen** (von ~1860 Frames)
+- Keine Player-Detektionen enthalten
+- Detektionen stammten von einem automatischen Ball-Detektor, nicht von D-FINE
+- Koordinaten stimmten nicht mit GT überein (komplett andere Positionen)
+- Das Modell bekam beim Training keine realistischen Player-Proposals als Input
+
+### Ursache
+Bei der Erstellung der Ball-Finetuning-Pipeline wurde keine D-FINE Inferenz auf die 6 Trainings-Sequenzen durchgefuehrt. Stattdessen wurde `build_ball_det_db.py` mit `*_ball_detections.json` Dateien verwendet, die von einem anderen (schwachen) Ball-Detektor stammten.
+
+### Daten-Pipeline des Ball-Finetunings (Uebersicht)
+
+#### Zwei getrennte Inputs fuer MOTRv2-Training:
+1. **Ground Truth** (`gt.txt` pro Sequenz) = Trainings-Labels
+   - Quelle: LabelStudio-Export `sportsmot_detections_gt_train_onethird.json` (1860 annotierte Frames)
+   - Konvertiert durch `tools/fine_tuning/convert_labelstudio_to_mot.py`
+   - Ergebnis: `volleyball/train_with_ball/{seq}/gt/gt.txt`
+   - Class 1 = Player (pre-annotiert), Class 2 = Ball (manuell annotiert)
+
+2. **Detection Database** (det_db JSON) = Input-Proposals fuer das Modell
+   - Alt (falsch): `det_db_volleyball_ball.json` - nur 371 Ball-Detektionen
+   - **Neu (korrekt): `sportsmot_train_onethird_gt_th0.7.json`** - D-FINE Detektionen
+
+#### Wie MOTRv2 beides verwendet (`datasets/dance.py`):
+- GT-Eintraege werden zuerst in `targets['boxes']` geladen (score=1.0) → `gt_instances`
+- Det_db-Eintraege werden danach angehaengt → `proposals`
+- Split-Punkt: `n_gt = len(targets['labels'])`
+- Alles **vor** n_gt = Ground Truth (was das Modell lernen soll)
+- Alles **nach** n_gt = Proposals (was das Modell als Input bekommt)
+
+### Loesung
+
+#### 1. D-FINE Inferenz auf Trainings-Sequenzen
+Skript erstellt: `tools/fine_tuning/create_det_db_for_ball_finetune.sh`
+- Laesst D-FINE auf alle 6 SportsMOT Volleyball Sequenzen laufen
+- Verwendet `--allowed-classes "0,1,36,156,240"` (Person, Bicycle, Sports ball, etc.)
+- Merged alle 6 Teil-JSONs zu einer det_db
+- Score-Threshold als Argument (Standard: 0.3)
+
+D-FINE Inferenz-Befehl pro Sequenz:
+```bash
+python tools/inference/torch_inf.py \
+    -c configs/dfine/objects365/dfine_hgnetv2_l_obj365.yml \
+    -r dfine_l_obj365.pth \
+    -i "/path/to/images/*.jpg" \
+    -d "cuda:0" \
+    --motrv2 \
+    --sequence-name "volleyball/train_with_ball/{seq}" \
+    --allowed-classes "0,1,36,156,240" \
+    --motrv2-score-threshold 0.3
+```
+
+D-FINE unterstuetzt sowohl Videos als auch Einzel-Frames (`*.jpg` Glob-Pattern).
+
+#### 2. Zwei Detection Databases erstellt
+- `sportsmot_train_onethird_gt_th0.3.json` - Score Threshold 0.3 (mehr Detektionen, mehr Noise)
+- **`sportsmot_train_onethird_gt_th0.7.json`** - Score Threshold 0.7 (weniger Noise, gewaehlt)
+
+Statistiken der neuen det_db (th=0.7):
+- **1860 Frames** (alle Trainings-Frames abgedeckt)
+- **38.455 Detektionen** (~20.7 pro Frame)
+- Korrekte Keys: `volleyball/train_with_ball/{seq}/img1/XXXXXX`
+
+#### 3. Config aktualisiert
+`configs/volleyball_ball_finetune.args`:
+```
+--det_db sportsmot_train_onethird_gt_th0.7.json   # NEU (vorher: det_db_volleyball_ball.json)
+```
+
+### 6 Trainings-Sequenzen
+
+| Sequenz | Bilder | Player GT | Ball GT |
+|---------|--------|-----------|---------|
+| v_1LwtoLPw2TU_c006 | 286 | 3.174 | 272 |
+| v_1LwtoLPw2TU_c012 | 250 | 2.933 | 250 |
+| v_1LwtoLPw2TU_c014 | 544 | 6.525 | 537 |
+| v_1LwtoLPw2TU_c016 | 295 | 3.407 | 277 |
+| v_ApPxnw_Jffg_c001 | 235 | 2.338 | 233 |
+| v_ApPxnw_Jffg_c002 | 250 | 2.904 | 234 |
+| **Gesamt** | **1.860** | **21.281** | **1.803** |
+
+Bilder sind Symlinks auf `Datasets/SportsMOT_Volleyball/train/{seq}/img1/`.
+
+### Training-Befehl (korrigiert)
+```bash
+cd /home/es/es_es/es_lekamt00/BeachKI/MOTRv2
+export WORLD_SIZE=1 RANK=0 LOCAL_RANK=0 MASTER_ADDR=localhost MASTER_PORT=29501
+export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+python tools/fine_tuning/finetune_for_dfine.py @configs/volleyball_ball_finetune.args --train_strategy moderate
+```
+Hinweis: Port 29500 kann belegt sein, dann `MASTER_PORT=29501` verwenden.
+
+### Wichtige Erkenntnisse
+
+1. **Detection Database muss D-FINE Detektionen enthalten**, nicht Ausgaben eines anderen Detektors
+2. **GT ≠ Detection Database**: GT sind Labels (was gelernt wird), det_db sind Proposals (was als Input kommt)
+3. **Score Threshold 0.7** reduziert Noise bei ~20 Detections/Frame (0.3 hatte deutlich mehr)
+4. **D-FINE kann Einzel-Frames verarbeiten**: `-i "pfad/*.jpg"` statt nur Videos
+5. **Alte det_db war unbrauchbar**: 300/1860 Frames, nur Ball-Detektionen, falscher Detektor
+
+### Dateien
+
+#### Erstellt
+- `tools/fine_tuning/create_det_db_for_ball_finetune.sh` - Automatisiertes D-FINE Inferenz-Skript
+- `data/Dataset/mot/sportsmot_train_onethird_gt_th0.7.json` - Neue Detection Database (gewaehlt)
+- `data/Dataset/mot/sportsmot_train_onethird_gt_th0.3.json` - Alternative mit niedrigerem Threshold
+
+#### Geaendert
+- `configs/volleyball_ball_finetune.args` - det_db Pfad aktualisiert
+
+---
+
 ## Session 2026-02-09: GT-Daten Visualisierung
 
 ### Problem

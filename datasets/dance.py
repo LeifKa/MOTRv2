@@ -65,6 +65,9 @@ class DetMOTDetection:
                     crowd = False
                     x, y, w, h = map(float, (xywh))
                     label_idx = label - 1  # Convert 1-indexed class_id to 0-indexed label
+                    # For single-class datasets (e2e_dance), collapse all labels to class 0
+                    if args.dataset_file in ('e2e_dance', 'e2e_mot', 'e2e_joint', 'e2e_static_mot'):
+                        label_idx = 0
                     self.labels_full[vid][t].append([x, y, w, h, i, crowd, label_idx])
 
         # add_mot_folder("DanceTrack/train")  # Commented out - only use sequences from data_txt_path
@@ -85,6 +88,9 @@ class DetMOTDetection:
                         crowd = False
                         x, y, w, h = map(float, (xywh))
                         label_idx = label - 1  # Convert 1-indexed class_id to 0-indexed label
+                        # For single-class datasets (e2e_dance), collapse all labels to class 0
+                        if args.dataset_file in ('e2e_dance', 'e2e_mot', 'e2e_joint', 'e2e_static_mot'):
+                            label_idx = 0
                         self.labels_full[vid][t].append([x, y, w, h, i, crowd, label_idx])
 
         vid_files = list(self.labels_full.keys())

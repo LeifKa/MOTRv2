@@ -100,6 +100,44 @@ class MOTEvaluator:
 
         print(f"Loaded {len(self.gt_data)} frames with ground truth annotations")
 
+    def load_ground_truth_txt(self, txt_path: str):
+        """
+        Lädt Ground Truth aus MOT Format TXT Datei
+        Format: <frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, ...
+
+        Args:
+            txt_path: Pfad zur TXT Datei
+        """
+        print(f"Loading Ground Truth from {txt_path}...")
+
+        if not Path(txt_path).exists():
+            print(f"Warning: GT file {txt_path} not found!")
+            return
+
+        with open(txt_path, 'r') as f:
+            for line in f:
+                parts = line.strip().split(',')
+                if len(parts) < 6:
+                    continue
+
+                frame_id = int(parts[0])
+                track_id = int(parts[1])
+                x1 = float(parts[2])
+                y1 = float(parts[3])
+                w = float(parts[4])
+                h = float(parts[5])
+
+                # Convert from (x, y, w, h) to (x1, y1, x2, y2)
+                x2 = x1 + w
+                y2 = y1 + h
+                bbox = (x1, y1, x2, y2)
+
+                if frame_id not in self.gt_data:
+                    self.gt_data[frame_id] = []
+                self.gt_data[frame_id].append((track_id, bbox))
+
+        print(f"Loaded {len(self.gt_data)} frames with ground truth annotations")
+
     def load_predictions_mot_format(self, mot_file: str):
         """
         Lädt Predictions aus MOT Challenge Format (.txt)
@@ -760,40 +798,117 @@ class MOTEvaluator:
         print(f"\n✅ Metrics saved to {output_file}")
 
 
-def main():
-    """Main evaluation pipeline"""
-    print("\n" + "="*80)
-    print("MOTRv2 INFERENCE EVALUATION")
-    print("="*80 + "\n")
+def evaluate(gt_path: str, pred_path: str, output_dir: str, label: str,
+             iou_threshold: float = 0.5, gt_format: str = "txt"):
+    """
+    Fuehrt eine einzelne Evaluation durch.
 
-    # Pfade zu deinen Dateien (ANPASSEN!)
-    gt_json_path = "data/Dataset/mot/sportsmot_detections_gt_train_onethird.json"
-    pred_txt_path = "outputs/finetune_v1/inference_test/tracking_inference.txt"
-    output_dir = "analysis/plots"
+    Args:
+        gt_path: Pfad zur Ground Truth Datei (TXT oder JSON)
+        pred_path: Pfad zur Predictions Datei (TXT)
+        output_dir: Ausgabeverzeichnis fuer Plots und Metriken
+        label: Name/Label fuer diese Evaluation
+        iou_threshold: IoU Schwellenwert
+        gt_format: "txt" oder "json"
 
-    # Initialisiere Evaluator
-    evaluator = MOTEvaluator(iou_threshold=0.5)
+    Returns:
+        MOTEvaluator instance mit berechneten Metriken
+    """
+    print(f"\n{'='*80}")
+    print(f"EVALUATION: {label}")
+    print(f"{'='*80}\n")
 
-    # Lade Daten
-    evaluator.load_ground_truth_json(gt_json_path)
-    evaluator.load_predictions_mot_format(pred_txt_path)
+    evaluator = MOTEvaluator(iou_threshold=iou_threshold)
+
+    # Lade GT
+    if gt_format == "json":
+        evaluator.load_ground_truth_json(gt_path)
+    else:
+        evaluator.load_ground_truth_txt(gt_path)
+
+    # Lade Predictions
+    evaluator.load_predictions_mot_format(pred_path)
 
     # Berechne Metriken
-    evaluator.compute_metrics()
+    metrics = evaluator.compute_metrics()
+    if not metrics:
+        print(f"Skipping {label}: no common frames.")
+        return None
 
-    # Zeige Zusammenfassung
     evaluator.print_summary()
+    evaluator.save_metrics_json(f"{output_dir}/metrics.json")
 
-    # Speichere Metriken als JSON
-    evaluator.save_metrics_json("analysis/metrics_results.json")
+    print(f"\nCreating visualizations...")
+    evaluator.plot_results(f"{output_dir}/plots")
 
-    # Erstelle Visualisierungen
-    print(f"\n📊 Creating visualizations...")
-    evaluator.plot_results(output_dir)
+    return evaluator
 
-    print("\n" + "="*80)
-    print("✅ EVALUATION COMPLETE!")
-    print("="*80)
+
+def main():
+    """Main evaluation pipeline - Beach Volleyball Validation"""
+    import argparse
+
+    parser = argparse.ArgumentParser(description='MOTRv2 Evaluation')
+    parser.add_argument('--gt', default='../Datasets/Sequenz_Beach/sequenz_beach_valid_gt.txt',
+                        help='Ground Truth TXT file')
+    parser.add_argument('--pred', default=None,
+                        help='Single prediction file to evaluate')
+    parser.add_argument('--iou', type=float, default=0.5,
+                        help='IoU threshold (default: 0.5)')
+    parser.add_argument('--output', default='analysis/results',
+                        help='Output directory')
+    args = parser.parse_args()
+
+    gt_path = args.gt
+
+    if args.pred:
+        # Einzelne Evaluation
+        name = Path(args.pred).stem
+        evaluate(gt_path, args.pred, f"{args.output}/{name}", name, args.iou)
+    else:
+        # Alle verfuegbaren Inference-Ergebnisse evaluieren
+        predictions = {
+            'MOTRv2 + YOLOX (Vanilla)': 'outputs/inference_motrv2_yolox_vanilla/inference_motrv2_yolox_vanilla_th0.4_mt30.txt',
+            'YOLOX Detections only': 'analysis/yolox_detections_sequenz_beach.txt',
+        }
+
+        # Finde alle finetune inference Ergebnisse
+        for p in sorted(Path('outputs').glob('inference_v2_*/tracking_inference.txt')):
+            name = p.parent.name.replace('inference_v2_', 'Finetuned: ')
+            predictions[name] = str(p)
+
+        results = {}
+        for label, pred_path in predictions.items():
+            if not Path(pred_path).exists():
+                print(f"\nSkipping {label}: {pred_path} not found")
+                continue
+
+            safe_name = label.replace(' ', '_').replace('+', '').replace(':', '_').replace('(', '').replace(')', '')
+            evaluator = evaluate(gt_path, pred_path, f"{args.output}/{safe_name}", label, args.iou)
+            if evaluator and evaluator.metrics:
+                results[label] = {
+                    'metrics': {k: v for k, v in evaluator.metrics.items() if k != 'frame_metrics'},
+                    'losses': evaluator.compute_loss_functions()
+                }
+
+        # Vergleichstabelle ausgeben
+        if results:
+            print(f"\n\n{'='*100}")
+            print("COMPARISON TABLE")
+            print(f"{'='*100}")
+            print(f"{'Model':<40} {'MOTA':>8} {'Prec':>8} {'Recall':>8} {'F1':>8} {'AvgIoU':>8} {'FP':>8} {'FN':>8}")
+            print("-" * 100)
+            for label, data in results.items():
+                m = data['metrics']
+                print(f"{label:<40} {m['mota']:>8.4f} {m['precision']:>8.4f} {m['recall']:>8.4f} "
+                      f"{m['f1_score']:>8.4f} {m['avg_iou']:>8.4f} {m['false_positives']:>8d} {m['false_negatives']:>8d}")
+            print(f"{'='*100}")
+
+            # Speichere Vergleich als JSON
+            comparison_path = Path(args.output) / 'comparison.json'
+            with open(comparison_path, 'w') as f:
+                json.dump(results, f, indent=2)
+            print(f"\nComparison saved to {comparison_path}")
 
 
 if __name__ == "__main__":

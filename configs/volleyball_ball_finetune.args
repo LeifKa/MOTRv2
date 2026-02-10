@@ -1,5 +1,5 @@
 --meta_arch motr
---dataset_file e2e_volleyball_ball
+--dataset_file e2e_dance
 --epochs 10
 --with_box_refine
 --lr_drop 8
