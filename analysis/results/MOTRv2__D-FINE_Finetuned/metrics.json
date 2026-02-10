@@ -9,17 +9,19 @@
     "precision": 0.0014831617518757635,
     "recall": 0.2175658720200753,
     "f1_score": 0.0029462387880662038,
-    "mota": -146.2685069008783,
-    "id_switches": 52,
+    "mota": -146.25545796737768,
     "avg_iou": 0.7331045632038271,
+    "unique_pred_ids": 2163,
+    "avg_pred_per_frame": 625.8693790149892,
+    "fragmentation_ratio": 3.4559926919642403,
     "iou_threshold": 0.5
   },
   "losses": {
     "detection_loss": 1.780950966228049,
     "iou_loss": 0.2668954367961729,
-    "tracking_loss": 0.013048933500627352,
-    "mota_loss": 147.2685069008783,
-    "combined_loss": 0.7963636975802597
+    "fragmentation_loss": 0.7106475362852569,
+    "mota_loss": 147.25545796737768,
+    "combined_loss": 1.0056432784156486
   },
   "frame_metrics": [
     {

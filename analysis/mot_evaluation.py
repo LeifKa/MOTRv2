@@ -244,15 +244,8 @@ class MOTEvaluator:
         total_fp = 0  # False Positives
         total_fn = 0  # False Negatives
 
-        # Tracking-specific statistics
-        id_switches = 0
-        fragmentations = 0
-
         # IoU statistics
         iou_scores = []
-
-        # Track history for computing ID switches
-        prev_gt_to_pred_mapping = {}  # {gt_id: pred_id} mapping in previous frame
 
         # Per-frame analysis
         frame_metrics = []
@@ -311,14 +304,6 @@ class MOTEvaluator:
             total_fp += fp
             total_fn += fn
 
-            # Detect ID switches
-            for gt_id, pred_id in gt_to_pred_mapping.items():
-                if gt_id in prev_gt_to_pred_mapping:
-                    if prev_gt_to_pred_mapping[gt_id] != pred_id:
-                        id_switches += 1
-
-            prev_gt_to_pred_mapping = gt_to_pred_mapping
-
             # Frame metrics
             frame_precision = tp / len(pred_boxes) if len(pred_boxes) > 0 else 0
             frame_recall = tp / len(gt_boxes) if len(gt_boxes) > 0 else 0
@@ -341,11 +326,24 @@ class MOTEvaluator:
         recall = total_tp / (total_tp + total_fn) if (total_tp + total_fn) > 0 else 0
         f1_score = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
 
-        # MOTA (Multiple Object Tracking Accuracy)
-        mota = 1 - (total_fn + total_fp + id_switches) / total_gt_detections if total_gt_detections > 0 else 0
+        # MOTA (Multiple Object Tracking Accuracy) — without ID switches since GT has no consistent track IDs
+        mota = 1 - (total_fn + total_fp) / total_gt_detections if total_gt_detections > 0 else 0
 
         # Average IoU
         avg_iou = np.mean(iou_scores) if iou_scores else 0
+
+        # ID Fragmentation: count unique prediction track IDs vs avg detections per frame
+        # A good tracker assigns few stable IDs (e.g. ~4-10 for players).
+        # A bad tracker assigns hundreds/thousands of IDs (constant re-identification).
+        all_pred_ids = set()
+        for frame_id in common_frames:
+            if frame_id in self.pred_data:
+                for track_id, _, _ in self.pred_data[frame_id]:
+                    all_pred_ids.add(track_id)
+        unique_pred_ids = len(all_pred_ids)
+        avg_pred_per_frame = total_pred_detections / len(common_frames) if len(common_frames) > 0 else 0
+        # Fragmentation ratio: 1.0 = IDs reset each frame (no tracking), >>1 = many unique IDs
+        fragmentation_ratio = unique_pred_ids / avg_pred_per_frame if avg_pred_per_frame > 0 else 0
 
         self.metrics = {
             'total_frames': len(common_frames),
@@ -358,8 +356,10 @@ class MOTEvaluator:
             'recall': recall,
             'f1_score': f1_score,
             'mota': mota,
-            'id_switches': id_switches,
             'avg_iou': avg_iou,
+            'unique_pred_ids': unique_pred_ids,
+            'avg_pred_per_frame': avg_pred_per_frame,
+            'fragmentation_ratio': fragmentation_ratio,
             'iou_threshold': self.iou_threshold,
             'frame_metrics': frame_metrics
         }
@@ -381,7 +381,7 @@ class MOTEvaluator:
             return {
                 'detection_loss': 0.0,
                 'iou_loss': 0.0,
-                'tracking_loss': 0.0,
+                'fragmentation_loss': 0.0,
                 'mota_loss': 0.0,
                 'combined_loss': 0.0
             }
@@ -392,22 +392,28 @@ class MOTEvaluator:
         # IoU Loss: 1 - average IoU
         iou_loss = 1 - self.metrics['avg_iou']
 
-        # Tracking Loss: basiert auf ID switches
-        # Normalisiert durch Anzahl der GT Detections
-        tracking_loss = self.metrics['id_switches'] / self.metrics['total_gt_detections'] \
-                       if self.metrics['total_gt_detections'] > 0 else 0
+        # Fragmentation Loss: Misst wie viele einzigartige Track-IDs relativ zur
+        # durchschnittlichen Detektionsanzahl pro Frame vergeben werden.
+        # Perfektes Tracking: unique_ids ≈ avg_per_frame → ratio ≈ 1 → loss ≈ 0
+        # Schlechtes Tracking: unique_ids >> avg_per_frame → ratio >> 1 → loss → 1
+        # Formel: 1 - (avg_per_frame / unique_ids), clamped to [0, 1]
+        frag_ratio = self.metrics.get('fragmentation_ratio', 1.0)
+        if frag_ratio > 1:
+            fragmentation_loss = 1 - (1 / frag_ratio)
+        else:
+            fragmentation_loss = 0.0
 
         # MOTA Loss: 1 - MOTA (höher ist schlechter)
         mota_loss = 1 - self.metrics['mota']
 
         # Combined Loss: gewichtete Summe
-        # Gewichtung: Detection (40%), IoU (30%), Tracking (30%)
-        combined_loss = 0.4 * detection_loss + 0.3 * iou_loss + 0.3 * tracking_loss
+        # Gewichtung: Detection (40%), IoU (30%), Fragmentation (30%)
+        combined_loss = 0.4 * detection_loss + 0.3 * iou_loss + 0.3 * fragmentation_loss
 
         losses = {
             'detection_loss': detection_loss,
             'iou_loss': iou_loss,
-            'tracking_loss': tracking_loss,
+            'fragmentation_loss': fragmentation_loss,
             'mota_loss': mota_loss,
             'combined_loss': combined_loss
         }
@@ -440,14 +446,16 @@ class MOTEvaluator:
 
         print(f"\n🔄 Tracking Metrics:")
         print(f"  MOTA:                   {self.metrics['mota']:.4f}")
-        print(f"  ID Switches:            {self.metrics['id_switches']}")
+        print(f"  Unique Pred IDs:        {self.metrics['unique_pred_ids']}")
+        print(f"  Avg Pred/Frame:         {self.metrics['avg_pred_per_frame']:.1f}")
+        print(f"  Fragmentation Ratio:    {self.metrics['fragmentation_ratio']:.2f}  (1.0=no tracking, lower=better)")
 
         # Compute and display losses
         losses = self.compute_loss_functions()
         print(f"\n📉 Loss Functions:")
         print(f"  Detection Loss:         {losses['detection_loss']:.4f}")
         print(f"  IoU Loss:               {losses['iou_loss']:.4f}")
-        print(f"  Tracking Loss:          {losses['tracking_loss']:.4f}")
+        print(f"  Fragmentation Loss:     {losses['fragmentation_loss']:.4f}")
         print(f"  MOTA Loss:              {losses['mota_loss']:.4f}")
         print(f"  Combined Loss:          {losses['combined_loss']:.4f}")
 
@@ -546,11 +554,11 @@ class MOTEvaluator:
 
         fig, ax = plt.subplots(figsize=(12, 6))
 
-        loss_names = ['Detection\nLoss', 'IoU\nLoss', 'Tracking\nLoss', 'MOTA\nLoss', 'Combined\nLoss']
+        loss_names = ['Detection\nLoss', 'IoU\nLoss', 'Fragmentation\nLoss', 'MOTA\nLoss', 'Combined\nLoss']
         loss_values = [
             losses['detection_loss'],
             losses['iou_loss'],
-            losses['tracking_loss'],
+            losses['fragmentation_loss'],
             losses['mota_loss'],
             losses['combined_loss']
         ]
@@ -576,38 +584,22 @@ class MOTEvaluator:
         print(f"  ✓ Saved loss_functions.png")
 
     def _plot_frame_metrics(self, output_path: Path):
-        """Plot per-frame metrics over time"""
+        """Plot GT vs Predicted detection counts per frame over time"""
         frame_metrics = self.metrics['frame_metrics']
         frames = [m['frame_id'] for m in frame_metrics]
-        precisions = [m['precision'] for m in frame_metrics]
-        recalls = [m['recall'] for m in frame_metrics]
-        f1_scores = [m['f1'] for m in frame_metrics]
-
-        fig, axes = plt.subplots(2, 1, figsize=(15, 10))
-
-        # Plot 1: Precision, Recall, F1 over frames
-        axes[0].plot(frames, precisions, label='Precision', marker='o', markersize=3, linewidth=2, alpha=0.8)
-        axes[0].plot(frames, recalls, label='Recall', marker='s', markersize=3, linewidth=2, alpha=0.8)
-        axes[0].plot(frames, f1_scores, label='F1-Score', marker='^', markersize=3, linewidth=2, alpha=0.8)
-        axes[0].set_xlabel('Frame ID', fontsize=12)
-        axes[0].set_ylabel('Score', fontsize=12)
-        axes[0].set_title(f'Per-Frame Detection Performance — {self.label}' if self.label else 'Per-Frame Detection Performance', fontsize=14, fontweight='bold')
-        axes[0].legend(loc='best', fontsize=10)
-        axes[0].grid(True, alpha=0.3)
-        axes[0].set_ylim([0, 1.1])
-
-        # Plot 2: GT vs Predicted detections count
         gt_counts = [m['gt_count'] for m in frame_metrics]
         pred_counts = [m['pred_count'] for m in frame_metrics]
 
-        axes[1].plot(frames, gt_counts, label='Ground Truth', marker='o', markersize=3, linewidth=2, alpha=0.8, color='green')
-        axes[1].plot(frames, pred_counts, label='Predictions', marker='s', markersize=3, linewidth=2, alpha=0.8, color='blue')
-        axes[1].fill_between(frames, gt_counts, pred_counts, alpha=0.2)
-        axes[1].set_xlabel('Frame ID', fontsize=12)
-        axes[1].set_ylabel('Number of Detections', fontsize=12)
-        axes[1].set_title(f'GT vs Predicted Detections — {self.label}' if self.label else 'GT vs Predicted Detections per Frame', fontsize=14, fontweight='bold')
-        axes[1].legend(loc='best', fontsize=10)
-        axes[1].grid(True, alpha=0.3)
+        fig, ax = plt.subplots(figsize=(15, 6))
+
+        ax.plot(frames, gt_counts, label='Ground Truth', marker='o', markersize=3, linewidth=2, alpha=0.8, color='green')
+        ax.plot(frames, pred_counts, label='Predictions', marker='s', markersize=3, linewidth=2, alpha=0.8, color='blue')
+        ax.fill_between(frames, gt_counts, pred_counts, alpha=0.2)
+        ax.set_xlabel('Frame ID', fontsize=12)
+        ax.set_ylabel('Number of Detections', fontsize=12)
+        ax.set_title(f'GT vs Predicted Detections — {self.label}' if self.label else 'GT vs Predicted Detections per Frame', fontsize=14, fontweight='bold')
+        ax.legend(loc='best', fontsize=10)
+        ax.grid(True, alpha=0.3)
 
         plt.tight_layout()
         plt.savefig(output_path / 'frame_metrics.png', dpi=300, bbox_inches='tight')
@@ -645,14 +637,24 @@ class MOTEvaluator:
         ax.grid(axis='y', alpha=0.3)
 
         # Add value labels and percentage on bars
+        max_val = max(values) if values else 1
         for bar, val in zip(bars, values):
             pct = val / total * 100 if total > 0 else 0
-            ax.text(bar.get_x() + bar.get_width()/2., bar.get_height(),
-                   f'{int(val)}\n({pct:.1f}%)',
-                   ha='center', va='bottom', fontsize=12, fontweight='bold')
+            # Place label inside bar if bar is tall enough, otherwise above
+            if val > max_val * 0.15:
+                ax.text(bar.get_x() + bar.get_width()/2., bar.get_height() * 0.92,
+                       f'{int(val)}\n({pct:.1f}%)',
+                       ha='center', va='top', fontsize=12, fontweight='bold', color='white')
+            else:
+                ax.text(bar.get_x() + bar.get_width()/2., bar.get_height(),
+                       f'{int(val)}\n({pct:.1f}%)',
+                       ha='center', va='bottom', fontsize=12, fontweight='bold')
+
+        # Add headroom above tallest bar for title clearance
+        ax.set_ylim(0, max_val * 1.15)
 
         title = f'Detection Confusion Matrix — {self.label}' if self.label else 'Detection Confusion Matrix'
-        ax.set_title(title, fontsize=14, fontweight='bold')
+        ax.set_title(title, fontsize=14, fontweight='bold', pad=12)
 
         plt.tight_layout()
         plt.savefig(output_path / 'detection_confusion.png', dpi=300, bbox_inches='tight')
@@ -704,7 +706,9 @@ class MOTEvaluator:
 
         ───────────────────
 
-        ID Switches: {self.metrics['id_switches']}
+        Unique Pred IDs: {self.metrics['unique_pred_ids']}
+
+        Frag. Ratio: {self.metrics['fragmentation_ratio']:.2f}
 
         IoU Threshold: {self.metrics['iou_threshold']}
         """
@@ -717,7 +721,7 @@ class MOTEvaluator:
         loss_data = {
             'Detection': losses['detection_loss'],
             'IoU': losses['iou_loss'],
-            'Tracking': losses['tracking_loss'],
+            'Fragmentation': losses['fragmentation_loss'],
             'Combined': losses['combined_loss']
         }
         wedges, texts, autotexts = ax3.pie(list(loss_data.values()), labels=list(loss_data.keys()),
@@ -899,16 +903,17 @@ def main():
 
         # Vergleichstabelle ausgeben
         if results:
-            print(f"\n\n{'='*100}")
+            print(f"\n\n{'='*120}")
             print("COMPARISON TABLE")
-            print(f"{'='*100}")
-            print(f"{'Model':<40} {'MOTA':>8} {'Prec':>8} {'Recall':>8} {'F1':>8} {'AvgIoU':>8} {'FP':>8} {'FN':>8}")
-            print("-" * 100)
+            print(f"{'='*120}")
+            print(f"{'Model':<40} {'MOTA':>8} {'Prec':>8} {'Recall':>8} {'F1':>8} {'AvgIoU':>8} {'UIDs':>8} {'FragR':>8} {'FP':>8} {'FN':>8}")
+            print("-" * 120)
             for label, data in results.items():
                 m = data['metrics']
                 print(f"{label:<40} {m['mota']:>8.4f} {m['precision']:>8.4f} {m['recall']:>8.4f} "
-                      f"{m['f1_score']:>8.4f} {m['avg_iou']:>8.4f} {m['false_positives']:>8d} {m['false_negatives']:>8d}")
-            print(f"{'='*100}")
+                      f"{m['f1_score']:>8.4f} {m['avg_iou']:>8.4f} {m['unique_pred_ids']:>8d} {m['fragmentation_ratio']:>8.2f} "
+                      f"{m['false_positives']:>8d} {m['false_negatives']:>8d}")
+            print(f"{'='*120}")
 
             # Speichere Vergleich als JSON
             comparison_path = Path(args.output) / 'comparison.json'

@@ -10,17 +10,19 @@
       "precision": 0.4376327769347496,
       "recall": 0.708077584090351,
       "f1_score": 0.540935946731689,
-      "mota": -0.4026516081512399,
-      "id_switches": 818,
+      "mota": -0.20181684262214583,
       "avg_iou": 0.7989480362001774,
+      "unique_pred_ids": 9,
+      "avg_pred_per_frame": 6.893305439330544,
+      "fragmentation_ratio": 1.3056145675265554,
       "iou_threshold": 0.5
     },
     "losses": {
       "detection_loss": 0.8542896389748993,
       "iou_loss": 0.2010519637998226,
-      "tracking_loss": 0.20083476552909404,
-      "mota_loss": 1.40265160815124,
-      "combined_loss": 0.4622818743886348
+      "fragmentation_loss": 0.23407717340771728,
+      "mota_loss": 1.2018168426221458,
+      "combined_loss": 0.4722545967522217
     }
   },
   "D-FINE Detections only": {
@@ -34,17 +36,19 @@
       "precision": 0.3991837775793904,
       "recall": 0.7684753253130371,
       "f1_score": 0.5254322645626993,
-      "mota": -0.6575006137981831,
-      "id_switches": 1097,
+      "mota": -0.38816597102872574,
       "avg_iou": 0.7885247739303518,
+      "unique_pred_ids": 11,
+      "avg_pred_per_frame": 8.201882845188285,
+      "fragmentation_ratio": 1.3411554648641755,
       "iou_threshold": 0.5
     },
     "losses": {
       "detection_loss": 0.8323408971075725,
       "iou_loss": 0.2114752260696482,
-      "tracking_loss": 0.2693346427694574,
-      "mota_loss": 1.6575006137981831,
-      "combined_loss": 0.4771793194947607
+      "fragmentation_loss": 0.254374286801065,
+      "mota_loss": 1.3881659710287257,
+      "combined_loss": 0.47269121270424297
     }
   },
   "MOTRv2 + YOLOX (Vanilla)": {
@@ -58,17 +62,19 @@
       "precision": 0.3872171681828785,
       "recall": 0.8151239872329978,
       "f1_score": 0.5250256977939433,
-      "mota": -0.5396513626319666,
-      "id_switches": 264,
+      "mota": -0.4748342744905476,
       "avg_iou": 0.7975553704728942,
+      "unique_pred_ids": 29,
+      "avg_pred_per_frame": 8.968619246861925,
+      "fragmentation_ratio": 3.233496617681362,
       "iou_threshold": 0.5
     },
     "losses": {
       "detection_loss": 0.7976588445841237,
       "iou_loss": 0.20244462952710585,
-      "tracking_loss": 0.06481708814141911,
-      "mota_loss": 1.5396513626319666,
-      "combined_loss": 0.39924205313420696
+      "fragmentation_loss": 0.6907372673495888,
+      "mota_loss": 1.4748342744905476,
+      "combined_loss": 0.5870181068966579
     }
   },
   "MOTRv2 + D-FINE (Vanilla)": {
@@ -82,17 +88,19 @@
       "precision": 0.10048176187198898,
       "recall": 0.23817292006525284,
       "f1_score": 0.14133591481122945,
-      "mota": -1.9347471451876022,
-      "id_switches": 25,
+      "mota": -1.8939641109298533,
       "avg_iou": 0.720909490751273,
+      "unique_pred_ids": 149,
+      "avg_pred_per_frame": 9.884353741496598,
+      "fragmentation_ratio": 15.074328974535444,
       "iou_threshold": 0.5
     },
     "losses": {
       "detection_loss": 1.6613453180627582,
       "iou_loss": 0.279090509248727,
-      "tracking_loss": 0.040783034257748776,
-      "mota_loss": 2.934747145187602,
-      "combined_loss": 0.760500190277046
+      "fragmentation_loss": 0.9336620554261973,
+      "mota_loss": 2.8939641109298533,
+      "combined_loss": 1.0283638966275805
     }
   },
   "MOTRv2 + YOLOX (Finetuned)": {
@@ -106,17 +114,19 @@
       "precision": 0.4522911051212938,
       "recall": 0.823962681070464,
       "f1_score": 0.5840076568345949,
-      "mota": -0.3356248465504541,
-      "id_switches": 659,
+      "mota": -0.1738276454701695,
       "avg_iou": 0.8009289887691974,
+      "unique_pred_ids": 15,
+      "avg_pred_per_frame": 7.7615062761506275,
+      "fragmentation_ratio": 1.9326145552560647,
       "iou_threshold": 0.5
     },
     "losses": {
       "detection_loss": 0.7237462138082422,
       "iou_loss": 0.19907101123080262,
-      "tracking_loss": 0.1617972010802848,
-      "mota_loss": 1.335624846550454,
-      "combined_loss": 0.39775894921662314
+      "fragmentation_loss": 0.48256624825662486,
+      "mota_loss": 1.1738276454701695,
+      "combined_loss": 0.4939896633695251
     }
   },
   "MOTRv2 + D-FINE (Finetuned)": {
@@ -130,17 +140,19 @@
       "precision": 0.0014831617518757635,
       "recall": 0.2175658720200753,
       "f1_score": 0.0029462387880662038,
-      "mota": -146.2685069008783,
-      "id_switches": 52,
+      "mota": -146.25545796737768,
       "avg_iou": 0.7331045632038271,
+      "unique_pred_ids": 2163,
+      "avg_pred_per_frame": 625.8693790149892,
+      "fragmentation_ratio": 3.4559926919642403,
       "iou_threshold": 0.5
     },
     "losses": {
       "detection_loss": 1.780950966228049,
       "iou_loss": 0.2668954367961729,
-      "tracking_loss": 0.013048933500627352,
-      "mota_loss": 147.2685069008783,
-      "combined_loss": 0.7963636975802597
+      "fragmentation_loss": 0.7106475362852569,
+      "mota_loss": 147.25545796737768,
+      "combined_loss": 1.0056432784156486
     }
   }
 }
