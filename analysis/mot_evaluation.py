@@ -21,12 +21,14 @@ plt.rcParams['figure.figsize'] = (15, 10)
 class MOTEvaluator:
     """Evaluiert MOTRv2 Tracking Ergebnisse gegen Ground Truth"""
 
-    def __init__(self, iou_threshold: float = 0.5):
+    def __init__(self, iou_threshold: float = 0.5, label: str = ""):
         """
         Args:
             iou_threshold: IoU Schwellenwert für Detection Matching (default: 0.5)
+            label: Name/Label fuer diese Evaluation (erscheint in Plot-Titeln)
         """
         self.iou_threshold = iou_threshold
+        self.label = label
         self.gt_data = {}  # {frame_id: [(track_id, bbox), ...]}
         self.pred_data = {}  # {frame_id: [(track_id, bbox, conf), ...]}
         self.metrics = {}
@@ -500,7 +502,7 @@ class MOTEvaluator:
         bars = axes[0].bar(metrics_names, metrics_values, color=colors, alpha=0.7, edgecolor='black')
         axes[0].set_ylim([0, 1])
         axes[0].set_ylabel('Score', fontsize=12)
-        axes[0].set_title('MOTRv2 Performance Metrics', fontsize=14, fontweight='bold')
+        axes[0].set_title(f'Performance Metrics — {self.label}' if self.label else 'Performance Metrics', fontsize=14, fontweight='bold')
         axes[0].grid(axis='y', alpha=0.3)
 
         # Add value labels on bars
@@ -521,7 +523,7 @@ class MOTEvaluator:
         count_colors = ['#2ecc71', '#e74c3c', '#f39c12']
         bars = axes[1].bar(count_names, count_values, color=count_colors, alpha=0.7, edgecolor='black')
         axes[1].set_ylabel('Count', fontsize=12)
-        axes[1].set_title('Detection Counts', fontsize=14, fontweight='bold')
+        axes[1].set_title(f'Detection Counts — {self.label}' if self.label else 'Detection Counts', fontsize=14, fontweight='bold')
         axes[1].grid(axis='y', alpha=0.3)
 
         # Add value labels
@@ -556,7 +558,7 @@ class MOTEvaluator:
 
         bars = ax.bar(loss_names, loss_values, color=colors_map, alpha=0.8, edgecolor='black', linewidth=1.5)
         ax.set_ylabel('Loss Value', fontsize=12)
-        ax.set_title('MOTRv2 Loss Functions Comparison', fontsize=14, fontweight='bold')
+        ax.set_title(f'Loss Functions — {self.label}' if self.label else 'Loss Functions', fontsize=14, fontweight='bold')
         ax.grid(axis='y', alpha=0.3)
 
         # Add value labels
@@ -587,7 +589,7 @@ class MOTEvaluator:
         axes[0].plot(frames, f1_scores, label='F1-Score', marker='^', markersize=3, linewidth=2, alpha=0.8)
         axes[0].set_xlabel('Frame ID', fontsize=12)
         axes[0].set_ylabel('Score', fontsize=12)
-        axes[0].set_title('Per-Frame Detection Performance', fontsize=14, fontweight='bold')
+        axes[0].set_title(f'Per-Frame Detection Performance — {self.label}' if self.label else 'Per-Frame Detection Performance', fontsize=14, fontweight='bold')
         axes[0].legend(loc='best', fontsize=10)
         axes[0].grid(True, alpha=0.3)
         axes[0].set_ylim([0, 1.1])
@@ -601,7 +603,7 @@ class MOTEvaluator:
         axes[1].fill_between(frames, gt_counts, pred_counts, alpha=0.2)
         axes[1].set_xlabel('Frame ID', fontsize=12)
         axes[1].set_ylabel('Number of Detections', fontsize=12)
-        axes[1].set_title('Ground Truth vs Predicted Detections per Frame', fontsize=14, fontweight='bold')
+        axes[1].set_title(f'GT vs Predicted Detections — {self.label}' if self.label else 'GT vs Predicted Detections per Frame', fontsize=14, fontweight='bold')
         axes[1].legend(loc='best', fontsize=10)
         axes[1].grid(True, alpha=0.3)
 
@@ -612,44 +614,43 @@ class MOTEvaluator:
 
     def _plot_detection_confusion(self, output_path: Path):
         """Plot detection results as confusion-style visualization"""
-        fig, ax = plt.subplots(figsize=(8, 6))
+        fig, ax = plt.subplots(figsize=(9, 6))
 
         tp = self.metrics['true_positives']
         fp = self.metrics['false_positives']
         fn = self.metrics['false_negatives']
+        total = tp + fp + fn
 
-        # Create a 2x2 style visualization
-        data = np.array([[tp, fn], [fp, 0]])
+        # Three separate colored boxes with semantically correct colors
+        from matplotlib.colors import Normalize
 
-        # Custom colormap
-        cmap = plt.cm.RdYlGn
+        categories = [
+            ('True Positives', tp, '#27ae60'),   # Green - good
+            ('False Positives', fp, '#c0392b'),  # Red - bad
+            ('False Negatives', fn, '#e67e22'),  # Orange - bad (missed)
+        ]
 
-        im = ax.imshow([[tp, fn], [fp, 0]], cmap=cmap, alpha=0.6, vmin=0, vmax=max(tp, fp, fn))
+        bar_positions = [0, 1, 2]
+        values = [tp, fp, fn]
+        colors = [c[2] for c in categories]
+        labels = [c[0] for c in categories]
 
-        # Labels
-        ax.set_xticks([0, 1])
-        ax.set_yticks([0, 1])
-        ax.set_xticklabels(['Detected', 'Missed'], fontsize=12)
-        ax.set_yticklabels(['Actual Objects', 'False Alarms'], fontsize=12)
+        bars = ax.bar(bar_positions, values, color=colors, alpha=0.8, edgecolor='black', linewidth=1.5, width=0.7)
 
-        # Add text annotations
-        for i in range(2):
-            for j in range(2):
-                if not (i == 1 and j == 1):  # Skip bottom-right
-                    label = ''
-                    value = data[i, j]
-                    if i == 0 and j == 0:
-                        label = f'True Positives\n{int(value)}'
-                    elif i == 0 and j == 1:
-                        label = f'False Negatives\n{int(value)}'
-                    elif i == 1 and j == 0:
-                        label = f'False Positives\n{int(value)}'
+        ax.set_xticks(bar_positions)
+        ax.set_xticklabels(labels, fontsize=12, fontweight='bold')
+        ax.set_ylabel('Count', fontsize=12)
+        ax.grid(axis='y', alpha=0.3)
 
-                    ax.text(j, i, label, ha='center', va='center',
-                           fontsize=14, fontweight='bold', color='black')
+        # Add value labels and percentage on bars
+        for bar, val in zip(bars, values):
+            pct = val / total * 100 if total > 0 else 0
+            ax.text(bar.get_x() + bar.get_width()/2., bar.get_height(),
+                   f'{int(val)}\n({pct:.1f}%)',
+                   ha='center', va='bottom', fontsize=12, fontweight='bold')
 
-        ax.set_title('Detection Confusion Matrix', fontsize=14, fontweight='bold')
-        plt.colorbar(im, ax=ax, label='Count')
+        title = f'Detection Confusion Matrix — {self.label}' if self.label else 'Detection Confusion Matrix'
+        ax.set_title(title, fontsize=14, fontweight='bold')
 
         plt.tight_layout()
         plt.savefig(output_path / 'detection_confusion.png', dpi=300, bbox_inches='tight')
@@ -662,7 +663,8 @@ class MOTEvaluator:
         gs = fig.add_gridspec(3, 3, hspace=0.3, wspace=0.3)
 
         # Title
-        fig.suptitle('MOTRv2 Evaluation Dashboard', fontsize=18, fontweight='bold', y=0.98)
+        title = f'Evaluation Dashboard — {self.label}' if self.label else 'Evaluation Dashboard'
+        fig.suptitle(title, fontsize=18, fontweight='bold', y=0.98)
 
         # 1. Key Metrics (top-left, large)
         ax1 = fig.add_subplot(gs[0, :2])
@@ -818,7 +820,7 @@ def evaluate(gt_path: str, pred_path: str, output_dir: str, label: str,
     print(f"EVALUATION: {label}")
     print(f"{'='*80}\n")
 
-    evaluator = MOTEvaluator(iou_threshold=iou_threshold)
+    evaluator = MOTEvaluator(iou_threshold=iou_threshold, label=label)
 
     # Lade GT
     if gt_format == "json":
