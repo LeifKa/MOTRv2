@@ -1,11 +1,35 @@
+# Python compiled files
 __pycache__/
-*.pth
-*.train
-exps/
-build/
-data/
+*.pyc
+*.pyo
 *.egg
 *.egg-info
-*.mp4
-*.out
+
+# Build
+build/
+
+# Model weights
+*.pth
+*.pt
+*.onnx
+weights/
+
+# Data & inputs
+data/
+datasets/
+inputs/
+
+# Outputs & experiments
 outputs/
+exps/
+
+# Logs & SLURM output
+logs/
+*.log
+*.out
+*.train
+
+# Media & large binary files
+*.mp4
+*.avi
+*.pdf
