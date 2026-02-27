@@ -1,122 +1,142 @@
-# MOTRv2: Bootstrapping End-to-End Multi-Object Tracking by Pretrained Object Detectors
+# MOTRv2 – Beach Volleyball Tracking
 
-[![arXiv](https://img.shields.io/badge/arXiv-2211.09791-COLOR.svg)](https://arxiv.org/abs/2211.09791)
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/motrv2-bootstrapping-end-to-end-multi-object/multi-object-tracking-on-dancetrack)](https://paperswithcode.com/sota/multi-object-tracking-on-dancetrack?p=motrv2-bootstrapping-end-to-end-multi-object)
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/motrv2-bootstrapping-end-to-end-multi-object/multiple-object-tracking-on-bdd100k)](https://paperswithcode.com/sota/multiple-object-tracking-on-bdd100k?p=motrv2-bootstrapping-end-to-end-multi-object)
+Dieses Repository basiert auf [MOTRv2](https://arxiv.org/abs/2211.09791) und wurde für das Tracking von Beach-Volleyball-Spielern und -Ball angepasst. Als Detektor wird [D-FINE](../D-FINE) anstelle von YOLOX verwendet.
 
-This repository is an official implementation of [MOTRv2](https://arxiv.org/abs/2211.09791).
+Das originale README ist unter [README_ORIGINAL.md](README_ORIGINAL.md) verfügbar.
 
-
-## Introduction
-
-**TL; DR.** MOTRv2 improve MOTR by utilizing YOLOX to provide detection prior.
-
-![Overview](https://raw.githubusercontent.com/zyayoung/oss/main/motrv2_main.jpg)
-
-**Abstract.** In this paper, we propose MOTRv2, a simple yet effective pipeline to bootstrap end-to-end multi-object tracking with a pretrained object detector. Existing end-to-end methods, e.g. MOTR and TrackFormer are inferior to their tracking-by-detection counterparts mainly due to their poor detection performance.  We aim to improve MOTR by elegantly incorporating an extra object detector. We first adopt the anchor formulation of queries and then use an extra object detector to generate proposals as anchors, providing detection prior to MOTR. The simple modification greatly eases the conflict between joint learning detection and association tasks in MOTR. MOTRv2 keeps the end-to-end feature and scales well on large-scale benchmarks. MOTRv2 achieves the top performance (73.4% HOTA) among all existing methods on the DanceTrack dataset. Moreover, MOTRv2 reaches state-of-the-art performance on the BDD100K dataset. We hope this simple and effective pipeline can provide some new insights to the end-to-end MOT community.
-
-## News
-- **2023.02.28** MOTRv2 is accepted to CVPR 2023.
-- **2022.11.18** MOTRv2 paper is available on [arxiv](https://arxiv.org/abs/2211.09791).
-- **2022.10.27** Our DanceTrack challenge tech report is released [[arxiv]](https://arxiv.org/abs/2210.15281) [[ECCVW Challenge]](https://motcomplex.github.io/index.html#challenge).
-- **2022.10.05** MOTRv2 achieved the 1st place in the [1st Multiple People Tracking in Group Dance Challenge](https://motcomplex.github.io/).
-
-## Main Results
-
-### DanceTrack
-
-| **HOTA** | **DetA** | **AssA** | **MOTA** | **IDF1** |                                           **URL**                                           |
-| :------: | :------: | :------: | :------: | :------: | :-----------------------------------------------------------------------------------------: |
-|   69.9   |   83.0   |   59.0   |   91.9   |   71.7   | [model](https://drive.google.com/file/d/1EA4lndu2yQcVgBKR09KfMe5efbf631Th/view?usp=share_link) |
-
-### Visualization
-
-<!-- |OC-SORT|MOTRv2| -->
-|SORT-like SoTA|MOTRv2|
-|:-:|:-:|
-|![](https://raw.githubusercontent.com/zyayoung/oss/main/2_ocsort.gif)|![](https://raw.githubusercontent.com/zyayoung/oss/main/2_motrv2.gif)|
-|![](https://raw.githubusercontent.com/zyayoung/oss/main/19_ocsort.gif)|![](https://raw.githubusercontent.com/zyayoung/oss/main/19_motrv2.gif)|
-|![](https://raw.githubusercontent.com/zyayoung/oss/main/1_ocsort.gif)|![](https://raw.githubusercontent.com/zyayoung/oss/main/1_motrv2.gif)|
-
+---
 
 ## Installation
 
-The codebase is built on top of [Deformable DETR](https://github.com/fundamentalvision/Deformable-DETR) and [MOTR](https://github.com/megvii-research/MOTR).
+```bash
+conda create -n motrv2 python=3.7
+conda activate motrv2
+conda install pytorch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 -c pytorch
+pip install -r requirements.txt
 
-### Requirements
-
-* Install pytorch using conda (optional)
-
-    ```bash
-    conda create -n motrv2 python=3.7
-    conda activate motrv2
-    conda install pytorch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 -c pytorch
-    ```
-
-* Other requirements
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-* Build MultiScaleDeformableAttention
-    ```bash
-    cd ./models/ops
-    sh ./make.sh
-    ```
-
-## Usage
-
-### Dataset preparation
-
-1. Download YOLOX detection from [here](https://drive.google.com/file/d/1cdhtztG4dbj7vzWSVSehLL6s0oPalEJo/view?usp=share_link).
-2. Please download [DanceTrack](https://dancetrack.github.io/) and [CrowdHuman](https://www.crowdhuman.org/) and unzip them as follows:
-
-```
-/data/Dataset/mot
-├── crowdhuman
-│   ├── annotation_train.odgt
-│   ├── annotation_trainval.odgt
-│   ├── annotation_val.odgt
-│   └── Images
-├── DanceTrack
-│   ├── test
-│   ├── train
-│   └── val
-├── det_db_motrv2.json
+# MultiScaleDeformableAttention kompilieren
+cd ./models/ops && sh ./make.sh
 ```
 
-You may use the following command for generating crowdhuman trainval annotation:
+---
+
+## Inferenz (Beach Volleyball)
+
+Gewichte separat herunterladen und in `weights/` ablegen.
 
 ```bash
-cat annotation_train.odgt annotation_val.odgt > annotation_trainval.odgt
+python submit_dance.py \
+    --meta_arch motr \
+    --dataset_file e2e_dance \
+    --with_box_refine \
+    --query_interaction_layer QIMv2 \
+    --num_queries 10 \
+    --use_checkpoint \
+    --resume ./weights/motrv2_finetuned_volleyball.pth \
+    --det_db ./inputs/detections/det_db_beach_volleyball.json \
+    --mot_path ./data/Dataset/mot \
+    --output_dir outputs/inference_beach_volleyball \
+    --exp_name beach_volleyball_test \
+    --score_threshold 0.7 \
+    --miss_tolerance 20
 ```
 
-### Training
+**Parameter:**
+- `--resume` – Gewichte des feingetunten Modells
+- `--det_db` – Detection-Datenbank (JSON), erzeugt mit D-FINE (`tools/inference/torch_inf.py --motrv2`)
+- `--mot_path` – Pfad zum Datensatz (MOT-Format)
+- `--score_threshold` – Minimaler Konfidenz-Score für Tracks
+- `--miss_tolerance` – Frames, nach denen ein verlorener Track gelöscht wird
 
-You may download the coco pretrained weight from [Deformable DETR (+ iterative bounding box refinement)](https://github.com/fundamentalvision/Deformable-DETR#:~:text=config%0Alog-,model,-%2B%2B%20two%2Dstage%20Deformable), and modify the `--pretrained` argument to the path of the weight. Then training MOTR on 8 GPUs as following:
+Fertige Argument-Dateien (`.args`) für verschiedene Konfigurationen befinden sich in `configs/`.
 
-```bash 
-./tools/train.sh configs/motrv2.args
-```
+---
 
-### Inference on DanceTrack Test Set
+## Visualisierung
 
 ```bash
-# run a simple inference on our pretrained weights
-./tools/simple_inference.sh ./weights/motrv2_dancetrack.pth
-
-# Or evaluate an experiment run
-# ./tools/eval.sh exps/motrv2/run1
-
-# then zip the results
-zip motrv2.zip tracker/ -r
+python tools/visualization/visualize_tracking.py \
+    --images ./data/Dataset/mot/volleyball/test/test1/img1 \
+    --tracking outputs/inference_motrv2_yolox_vanilla/inference_motrv2_yolox_vanilla_th0.4_mt50.txt \
+    --output outputs/inference_motrv2_yolox_vanilla/inference_motrv2_yolox_vanilla_th0.4_mt50.mp4 \
+    --fps 30
 ```
 
-## Acknowledgements
+---
 
-- [MOTR](https://github.com/megvii-research/MOTR)
-- [ByteTrack](https://github.com/ifzhang/ByteTrack)
-- [YOLOX](https://github.com/Megvii-BaseDetection/YOLOX)
-- [OC-SORT](https://github.com/noahcao/OC_SORT)
-- [DanceTrack](https://github.com/DanceTrack/DanceTrack)
-- [BDD100K](https://github.com/bdd100k/bdd100k)
+## Hinzugefügte Dateien
+
+### Konfigurationen (`configs/`)
+
+| Datei | Beschreibung |
+|---|---|
+| `beach_volleyball.args` | Inferenz-Konfiguration für Beach Volleyball |
+| `volleyball_finetune.args` | Standard-Finetuning (Spieler) |
+| `volleyball_ball_finetune.args` | Finetuning inkl. Ball-Detektion |
+| `volleyball_finetune_aggressive_*.args` | Finetuning-Varianten mit hoher Learning Rate |
+| `volleyball_finetune_minimal_*.args` | Finetuning-Varianten mit minimaler Regularisierung |
+| `volleyball_finetune_moderate_*.args` | Finetuning-Varianten mit moderater Learning Rate |
+| `volleyball_full_finetune.args` | Vollständiges Finetuning aller Layer |
+| `pseudo_labels_yolox.args` | Inferenz zur Pseudo-Label-Generierung |
+
+### SLURM-Jobs (`slurmjobs/`)
+
+| Datei | Beschreibung |
+|---|---|
+| `run_motrv2_tracking.slurm` | Tracking-Inferenz auf dem Cluster |
+| `run_motr_finetune_volleyball.slurm` | Finetuning auf Volleyball-Daten |
+| `run_motr_finetune_volleyball_fast.slurm` | Schnelles Finetuning (weniger Epochen) |
+| `run_inference_v2.slurm` | Inferenz-Job (aktuellste Version) |
+| `run_visualization_v2.slurm` | Visualisierung der Tracking-Ergebnisse |
+| `run_volleyball_ball_*.slurm` | Finetuning und Inferenz mit Ball-Detektion |
+| `run_vb_*.slurm` | Finetuning-Varianten (verschiedene Hyperparameter) |
+
+### Visualisierungstools (`tools/visualization/`)
+
+| Datei | Beschreibung |
+|---|---|
+| `visualize_tracking.py` | Erstellt MP4-Video aus MOTRv2-Tracking-Ergebnissen (MOT-TXT-Format) |
+| `visualize_detections.py` | Visualisiert D-FINE-Detektionen als Video mit Bounding Boxes |
+| `visualize_gt.py` | Visualisiert Ground-Truth-Annotierungen im MOT-Format |
+
+### Finetuning-Tools (`tools/fine_tuning/`)
+
+| Datei | Beschreibung |
+|---|---|
+| `finetune_for_dfine.py` | Trainiert ausschließlich den `yolox_embed`-Layer für D-FINE-Kompatibilität |
+| `build_ball_det_db.py` | Erstellt Detection-DB (JSON) für MOTRv2 mit Ball-Detektionen |
+| `convert_labelstudio_to_mot.py` | Konvertiert LabelStudio-JSON-Export ins MOT-Ground-Truth-Format |
+| `convert_det_db_to_mot.py` | Konvertiert Detection-DB JSON ins MOT-TXT-Format |
+| `create_det_db_for_ball_finetune.sh` | Shell-Script zur automatischen Erstellung der Ball-Detection-DB |
+
+### Datenvorbereitung (`tools/data_prep/`)
+
+| Datei | Beschreibung |
+|---|---|
+| `convert_to_gt.py` | Konvertiert MOTRv2-Tracking-Output ins MOT-Ground-Truth-Format (für Evaluation) |
+
+### Analyse (`analysis/`)
+
+| Datei | Beschreibung |
+|---|---|
+| `mot_evaluation.py` | Berechnet MOT-Metriken (HOTA, MOTA, IDF1, DetA, AssA) |
+| `demo_evaluation.py` | Beispiel-Evaluation mit Demo-Daten |
+| `example_usage.py` | Verwendungsbeispiele für `mot_evaluation.py` |
+| `results/` | Evaluation-Ergebnisse und Plots für alle Konfigurationen |
+
+### Dokumentation
+
+| Datei | Beschreibung |
+|---|---|
+| `FINETUNE_CONFIGURATIONS.md` | Dokumentation aller Finetuning-Konfigurationen und ihrer Ergebnisse |
+| `README_DIRECTORY.md` | Übersicht der Verzeichnisstruktur |
+| `SUMMARY.md` | Projektzusammenfassung und Erkenntnisse |
+| `CLAUDE.md` | Anweisungen für Claude Code (KI-Assistent) |
+
+### Modifizierte Originaldateien
+
+| Datei | Änderung |
+|---|---|
+| `submit_dance.py` | Angepasst für Beach-Volleyball-Daten und D-FINE als Detektor |
+| `main.py` | Erweitert um Finetuning-Parameter |
+| `datasets/dance.py` | Angepasst für Volleyball-Datensatz-Struktur |
